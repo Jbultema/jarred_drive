@@ -1,0 +1,20 @@
+{
+  "sample_rate_hz": 10.0,
+  "samples": 5000,
+  "maximum_gap_ms": 101.0,
+  "gap_count": 0,
+  "timestamp_jitter_p95_ms": 0.0,
+  "numeric_completeness": 1.0,
+  "gps_fix_fraction": 1.0,
+  "remote_known_fraction": 1.0,
+  "sd_ok_fraction": 1.0,
+  "fault_samples": 0,
+  "fault_codes": 0,
+  "water_alarm_samples": 0,
+  "minimum_water_adc": 3802.010159661497,
+  "minimum_voltage_V": 46.103250425774185,
+  "voltage_range_V": 4.24133651071385,
+  "peak_battery_A": 77.55090359569188,
+  "peak_motor_A": 130.876304794778,
+  "peak_duty": 0.933169935615179
+}

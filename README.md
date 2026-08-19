@@ -11,16 +11,21 @@ tracking, foiling analytics, GPS routes, and manual event annotation.
 
 - Versioned 10 Hz raw telemetry contract covering VESC, six pack temperatures, enclosure temperature,
   pulsed water sensor, QMI8658 IMU, health flags, and optional GNSS.
-- Deterministic synthetic sessions for a normal learning session, a Pack 4 thermal anomaly, and a latched
-  water-ingress/VESC-fault drill.
+- Deterministic coupled simulation for a learning session, a Pack 4 thermal anomaly, and a latched
+  water-ingress/VESC-fault drill, including launches, aborts, crashes, turns, GPS motion, IMU dynamics,
+  voltage sag, thermal response, GNSS dropout, and logger-health degradation.
 - Raw → detected events → rides → session summaries, with confidence and provenance retained.
-- Streamlit Flight Deck, Rides, Equipment, Tuning, Progress, Annotation, and Raw Data views.
-- GPS route coloring, launch/ride/energy metrics, thermal spread diagnostics, and configuration comparisons.
+- Streamlit Flight Deck, Launch Lab, Ride Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotation,
+  and Raw Data views.
+- Aligned launch power curves, failed-launch classification, crash windows, GPS turn dynamics, phase-specific
+  thermal/electrical analysis, logger integrity, and configuration comparisons.
 - Manual annotations stored separately and merged without destroying detector output.
 - PlatformIO firmware targeting Waveshare ESP32-S3-LCD-1.47B, plus host-native safety-policy tests.
 
 Synthetic content is labeled as such throughout. It demonstrates the workflows; it is not evidence of actual
 hardware behavior, classification accuracy, thermal limits, or performance.
+
+Metric definitions and inference boundaries are documented in [docs/analytics.md](docs/analytics.md).
 
 GPS support is optional and ready in software, but the current Flipsky VESC and Waveshare board do not contain
 a receiver. Field GPS requires a separate Phase 2 UART NMEA GNSS module on the reserved ESP GPIO2/GPIO3 pair.
@@ -53,7 +58,8 @@ JARRED_DRIVE_PORT_START=8600 make dashboard
 poetry run jarred-drive validate-log path/to/telemetry.csv
 
 # Recompute a summary with the transparent baseline detector
-poetry run jarred-drive summarize path/to/telemetry.csv
+poetry run jarred-drive summarize path/to/telemetry.csv --output analysis.json
+# Also writes events, rides, launches, crashes, thermal/electrical phases, and monitoring files.
 
 # Register the matching read-only VESC Tool snapshot
 poetry run jarred-drive register-config path/to/FOIL_012.json

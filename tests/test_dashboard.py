@@ -5,7 +5,7 @@ from pathlib import Path
 from streamlit.testing.v1 import AppTest
 
 from jarred_drive.config import load_config
-from jarred_drive.synthetic import write_demo_package
+from jarred_drive.synthetic import SCENARIOS, write_demo_package
 
 
 def test_every_dashboard_page_runs_without_exception() -> None:
@@ -17,7 +17,20 @@ def test_every_dashboard_page_runs_without_exception() -> None:
     app.run()
     assert not app.exception
     assert app.title[0].value == "Flight Deck"
-    for page in ("Rides", "Equipment", "Tuning", "Progress", "Annotate", "Raw Data"):
-        app.sidebar.radio[0].set_value(page).run()
-        assert not app.exception, page
-        assert app.title[0].value == page
+    pages = (
+        "Flight Deck",
+        "Launch Lab",
+        "Ride Dynamics",
+        "Thermal Lab",
+        "System Health",
+        "Tuning",
+        "Progress",
+        "Annotate",
+        "Raw Data",
+    )
+    for session_id in [scenario.session_id for scenario in SCENARIOS]:
+        app.sidebar.selectbox[0].set_value(session_id).run()
+        for page in pages:
+            app.sidebar.radio[0].set_value(page).run()
+            assert not app.exception, f"{session_id}: {page}"
+            assert app.title[0].value == page

@@ -81,7 +81,12 @@ OPTIONAL_GPS_COLUMNS: tuple[str, ...] = (
     "gps_fix_quality",
 )
 
-SYNTHETIC_ONLY_COLUMNS: tuple[str, ...] = ("sim_state", "scenario")
+SYNTHETIC_ONLY_COLUMNS: tuple[str, ...] = (
+    "sim_state",
+    "sim_attempt_id",
+    "sim_outcome",
+    "scenario",
+)
 PACK_TEMP_COLUMNS: tuple[str, ...] = tuple(f"pack{i}_C" for i in range(1, 7))
 
 

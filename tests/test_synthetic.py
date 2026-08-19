@@ -23,4 +23,20 @@ def test_demo_package_contains_three_scenarios(tmp_path: Path) -> None:
         assert (tmp_path / scenario.session_id / "telemetry.csv").exists()
         assert (tmp_path / scenario.session_id / "events.csv").exists()
         assert (tmp_path / scenario.session_id / "rides.csv").exists()
+        assert (tmp_path / scenario.session_id / "launches.csv").exists()
+        assert (tmp_path / scenario.session_id / "crashes.csv").exists()
+        assert (tmp_path / scenario.session_id / "thermal_sensors.csv").exists()
+        assert (tmp_path / scenario.session_id / "thermal_phases.csv").exists()
+        assert (tmp_path / scenario.session_id / "electrical_phases.csv").exists()
+        assert (tmp_path / scenario.session_id / "monitoring.json").exists()
         assert (tmp_path / scenario.session_id / "summary.json").exists()
+
+
+def test_synthetic_motion_couples_turns_gps_and_imu() -> None:
+    frame = generate_session(SCENARIOS[0])
+    assert frame["gps_course_deg"].nunique() > 100
+    assert frame["gps_lat"].max() - frame["gps_lat"].min() > 0.001
+    assert frame["gps_lon"].max() - frame["gps_lon"].min() > 0.001
+    assert frame.loc[frame["sim_state"] == "FOILING", "gps_speed_mps"].median() > 5.0
+    assert frame.loc[frame["sim_state"] == "FALL", "gyro_z_dps"].abs().max() > 100.0
+    assert {"SUCCESS", "FAILED", "LAUNCH_CRASH"}.issubset(set(frame["sim_outcome"]))

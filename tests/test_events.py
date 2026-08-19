@@ -11,8 +11,11 @@ def test_truth_detector_finds_launches_and_falls() -> None:
     frame = generate_session(scenario)
     telemetry, events = detect_events(frame, load_config().detection, use_synthetic_truth=True)
     assert "battery_power_W" in telemetry
-    assert (events["event_type"] == EventType.TAKEOFF).sum() == scenario.ride_count - 1
-    assert (events["event_type"] == EventType.FALL).sum() == scenario.ride_count
+    failed = len(scenario.launch_crash_indices) + len(scenario.aborted_launch_indices)
+    assert (events["event_type"] == EventType.TAKEOFF).sum() == scenario.attempt_count - failed
+    assert (events["event_type"] == EventType.FALL).sum() == (
+        scenario.attempt_count - len(scenario.aborted_launch_indices)
+    )
 
 
 def test_ingress_event_is_latched_once() -> None:

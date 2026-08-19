@@ -9,7 +9,15 @@ from typing import Annotated
 import pandas as pd
 import typer
 
-from jarred_drive.analytics import build_rides, summarize_session
+from jarred_drive.analytics import (
+    build_crash_dynamics,
+    build_electrical_phase_summary,
+    build_launch_attempts,
+    build_rides,
+    build_thermal_analysis,
+    summarize_session,
+    system_monitoring_summary,
+)
 from jarred_drive.config import DEFAULT_CONFIG_PATH, load_config
 from jarred_drive.events import detect_events
 from jarred_drive.io import read_telemetry
@@ -59,6 +67,11 @@ def summarize(
     config = load_config()
     telemetry, events = detect_events(frame, config.detection, use_synthetic_truth=synthetic_truth)
     rides = build_rides(telemetry, events)
+    launches = build_launch_attempts(telemetry, events)
+    crashes = build_crash_dynamics(telemetry, events, config.detection.motor_power_w)
+    _, thermal_sensors, thermal_phases = build_thermal_analysis(telemetry)
+    electrical_phases = build_electrical_phase_summary(telemetry)
+    monitoring = system_monitoring_summary(telemetry)
     summary = summarize_session(telemetry, events, rides)
     rendered = json.dumps(summary, indent=2, default=float)
     if output:
@@ -66,6 +79,16 @@ def summarize(
         output.write_text(rendered + "\n")
         events.to_csv(output.with_name(output.stem + "_events.csv"), index=False)
         rides.to_csv(output.with_name(output.stem + "_rides.csv"), index=False)
+        launches.to_csv(output.with_name(output.stem + "_launches.csv"), index=False)
+        crashes.to_csv(output.with_name(output.stem + "_crashes.csv"), index=False)
+        thermal_sensors.to_csv(output.with_name(output.stem + "_thermal_sensors.csv"), index=False)
+        thermal_phases.to_csv(output.with_name(output.stem + "_thermal_phases.csv"), index=False)
+        electrical_phases.to_csv(
+            output.with_name(output.stem + "_electrical_phases.csv"), index=False
+        )
+        output.with_name(output.stem + "_monitoring.json").write_text(
+            json.dumps(monitoring, indent=2, default=float) + "\n"
+        )
     typer.echo(rendered)
 
 
@@ -80,6 +103,10 @@ def compare_configs(
     columns = [
         "config_id",
         "launch_success",
+        "failed_launch_rate",
+        "launch_crashes",
+        "ride_falls",
+        "median_time_to_takeoff_seconds",
         "foil_utilization",
         "energy_Wh",
         "peak_pack_C",

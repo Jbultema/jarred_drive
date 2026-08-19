@@ -17,8 +17,8 @@ unknown additional columns as forward-compatible observations.
 not OK. The dashboard warns on UNKNOWN and stops only when a future independent input explicitly reports
 false. It never infers remote health from ordinary VESC telemetry.
 
-Synthetic files add `sim_state` and `scenario`. These are explicitly synthetic-only and will never be expected
-from field hardware.
+Synthetic files add `sim_state`, `sim_attempt_id`, `sim_outcome`, and `scenario`. These are explicitly
+synthetic-only and will never be expected from field hardware.
 
 ## Derived tables
 
@@ -29,6 +29,10 @@ warning, VESC fault, and session boundaries.
 Ride records describe a successful takeoff through fall/session end and may include multiple flight segments
 separated by recovered touchdowns. Session summaries aggregate attempts, launch success, foil utilization,
 energy, distance, speed, thermal behavior, alarms, and ride-duration metrics.
+
+Additional replaceable derived tables cover launch attempts, crash dynamics, per-sensor/per-phase thermal
+behavior, electrical phases, and logger monitoring. Their definitions and limitations are maintained in
+`docs/analytics.md`; none are part of the raw schema.
 
 ## Evolution rules
 
