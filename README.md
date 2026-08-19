@@ -15,8 +15,12 @@ tracking, foiling analytics, GPS routes, and manual event annotation.
   water-ingress/VESC-fault drill, including launches, aborts, crashes, turns, GPS motion, IMU dynamics,
   voltage sag, thermal response, GNSS dropout, and logger-health degradation.
 - Raw → detected events → rides → session summaries, with confidence and provenance retained.
-- Streamlit Flight Deck, Launch Lab, Ride Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotation,
-  and Raw Data views.
+- Streamlit Devices / Sync, Flight Deck, Launch Lab, Ride Dynamics, Thermal Lab, System Health, Tuning,
+  Progress, Annotation, and Raw Data views.
+- Home-LAN logger protocol with mDNS naming, REST manifests, resumable file downloads, SHA-256 verification,
+  duplicate-safe imports, immutable raw storage, QA reports, and DuckDB/Parquet processed storage.
+- A filesystem-backed synthetic logger that exercises the complete synchronization workflow before hardware
+  exists. It uses the same manifests and verification code as a physical logger.
 - Aligned launch power curves, failed-launch classification, crash windows, GPS turn dynamics, phase-specific
   thermal/electrical analysis, logger integrity, and configuration comparisons.
 - Manual annotations stored separately and merged without destroying detector output.
@@ -64,17 +68,25 @@ poetry run jarred-drive summarize path/to/telemetry.csv --output analysis.json
 # Register the matching read-only VESC Tool snapshot
 poetry run jarred-drive register-config path/to/FOIL_012.json
 
+# Exercise a complete sync against the synthetic development logger
+poetry run jarred-drive sync --url demo
+
+# Sync a physical logger after explicitly placing it in SYNC mode
+poetry run jarred-drive sync --url http://jarred-drive.local --token YOUR_LOCAL_DEVICE_TOKEN
+
 # Build the actual board firmware (does not flash hardware)
 make firmware-hardware
 ```
 
-The demo data lives in `data/demo/`. Real imports go under ignored `data/imports/`; manual labels go under
-ignored `data/annotations/`. No session data is uploaded anywhere by the application.
+The demo logger lives in `data/demo/`. Verified raw copies go under ignored `data/raw/<device>/<session>/`;
+replaceable DuckDB/Parquet outputs go under ignored `data/processed/`; manual labels remain under ignored
+`data/annotations/`. No cloud service is used and the app never deletes logger data.
 
 ## Documentation
 
 - [Architecture](docs/architecture.md)
 - [Data contract](docs/data_contract.md)
+- [Synchronization](docs/synchronization.md)
 - [Safety case](docs/safety.md)
 - [Hardware validation gates](docs/hardware_validation.md)
 - [Reference projects](docs/references.md)

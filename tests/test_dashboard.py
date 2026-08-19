@@ -16,8 +16,9 @@ def test_every_dashboard_page_runs_without_exception() -> None:
     app = AppTest.from_file(script, default_timeout=30)
     app.run()
     assert not app.exception
-    assert app.title[0].value == "Flight Deck"
+    assert app.title[0].value == "Devices / Sync"
     pages = (
+        "Devices / Sync",
         "Flight Deck",
         "Launch Lab",
         "Ride Dynamics",

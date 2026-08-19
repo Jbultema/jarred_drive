@@ -22,6 +22,14 @@ from jarred_drive.config import DEFAULT_CONFIG_PATH, load_config
 from jarred_drive.events import detect_events
 from jarred_drive.io import read_telemetry
 from jarred_drive.schema import validate_telemetry
+from jarred_drive.sync import (
+    DEFAULT_DEVICE_URL,
+    FilesystemLoggerClient,
+    HttpLoggerClient,
+    SessionStore,
+    SyncError,
+    sync_logger,
+)
 from jarred_drive.synthetic import write_demo_package
 
 app = typer.Typer(no_args_is_help=True, help="Jarred Drive telemetry and analytics tools.")
@@ -131,6 +139,32 @@ def register_config(
     destination = output / f"{config_id}.json"
     destination.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
     typer.echo(f"Registered {config_id} at {destination}")
+
+
+@app.command("sync")
+def sync_device(
+    url: Annotated[str, typer.Option(help="Logger base URL or 'demo'")] = DEFAULT_DEVICE_URL,
+    token: Annotated[
+        str | None, typer.Option(help="Device token for import acknowledgement")
+    ] = None,
+    raw_root: Annotated[Path, typer.Option(help="Immutable raw session root")] = Path("data/raw"),
+    processed_root: Annotated[Path, typer.Option(help="DuckDB/Parquet analytical root")] = Path(
+        "data/processed"
+    ),
+) -> None:
+    """Synchronize new sessions from a logger in explicit SYNC mode."""
+    client = FilesystemLoggerClient(Path("data/demo")) if url == "demo" else HttpLoggerClient(url)
+    try:
+        results = sync_logger(client, SessionStore(raw_root, processed_root), token=token)
+    except SyncError as error:
+        typer.echo(f"SYNC FAILED: {error}")
+        raise typer.Exit(code=1) from error
+    for result in results:
+        typer.echo(
+            f"{result.session_id}: {result.status} "
+            f"({result.verified_files} files, {result.downloaded_bytes} bytes downloaded)"
+        )
+    typer.echo("Raw logger data was not deleted.")
 
 
 if __name__ == "__main__":

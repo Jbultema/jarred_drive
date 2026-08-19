@@ -7,6 +7,10 @@ mechanical system safe by itself.
 
 - VX3 uses PPM directly to the VESC; the ESP never relays throttle.
 - VESC COMM UART is used only for telemetry requests in version 1.
+- Wi-Fi is forced off when a recording begins and can only run in explicit SYNC mode after the session is
+  closed and finalized. A native state-machine test enforces this transition boundary.
+- Logger REST endpoints expose no throttle, braking, or VESC configuration write operation. Sync
+  acknowledgement is token-authenticated and never deletes raw data.
 - No method in the Python package or firmware sends duty, RPM, current, brake, or configuration commands.
 - Pack sensors connected to the ESP are diagnostic. The dedicated VESC NTC remains independent.
 - Water detection is pulsed, requires consecutive wet samples, and latches for the session.

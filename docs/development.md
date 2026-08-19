@@ -13,15 +13,17 @@ make dashboard
 ```
 
 Dashboard verification requires more than importing the Python module: start Streamlit, confirm an HTTP 200
-response, and inspect all nine pages for the normal, thermal anomaly, and ingress drill sessions. The
+response, and inspect all ten pages for the normal, thermal anomaly, and ingress drill sessions. The
 launcher scans from port 8501 and binds to the first available IPv4 localhost port; set
 `JARRED_DRIVE_PORT_START` to begin elsewhere. See
 `docs/validation_report.md` for the most recent captured evidence.
 
-## Privacy
+## Privacy and networking
 
-The app reads local CSV/JSON files and has no network client, telemetry service, cloud storage, account token,
-or analytics SDK. Imported sessions and annotations are ignored by Git. Synthetic fixtures are safe to commit.
+The only network client is an explicit home-LAN logger sync to the address shown in Devices / Sync. There is
+no cloud storage, telemetry service, or analytics SDK. Device tokens are user-supplied at runtime and are not
+stored by the app. Raw/processed sessions and annotations are ignored by Git. Synthetic fixtures are safe to
+commit.
 
 ## Repository identity
 

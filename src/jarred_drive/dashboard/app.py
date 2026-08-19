@@ -36,15 +36,27 @@ from jarred_drive.config import load_config
 from jarred_drive.events import detect_events
 from jarred_drive.io import discover_sessions, read_json, read_telemetry
 from jarred_drive.schema import PACK_TEMP_COLUMNS, EventType, RideState, validate_telemetry
+from jarred_drive.sync import (
+    DEFAULT_DEVICE_URL,
+    FilesystemLoggerClient,
+    HttpLoggerClient,
+    LoggerClient,
+    SessionStore,
+    SyncError,
+    sync_logger,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 DEMO_ROOT = ROOT / "data" / "demo"
 IMPORT_ROOT = ROOT / "data" / "imports"
+RAW_ROOT = ROOT / "data" / "raw"
+PROCESSED_ROOT = ROOT / "data" / "processed"
 ANNOTATION_ROOT = ROOT / "data" / "annotations"
 CONFIG_SNAPSHOT_ROOT = ROOT / "data" / "configs"
 CONFIG = load_config(ROOT / "configs" / "system.yaml")
 
 NAV_ITEMS = (
+    "Devices / Sync",
     "Flight Deck",
     "Launch Lab",
     "Ride Dynamics",
@@ -156,15 +168,21 @@ def _load_session(path: str, modified_ns: int) -> pd.DataFrame:
 
 
 def _available_sessions() -> dict[str, Path]:
-    sessions = discover_sessions(DEMO_ROOT) + discover_sessions(IMPORT_ROOT)
+    sessions = (
+        discover_sessions(DEMO_ROOT)
+        + discover_sessions(IMPORT_ROOT)
+        + discover_sessions(RAW_ROOT, recursive=True)
+    )
     return {session.session_id: session.telemetry for session in sessions}
 
 
 def _import_panel() -> None:
-    with st.sidebar.expander("Import microSD log"):
+    with st.sidebar.expander("Manual microSD fallback"):
         uploaded = st.file_uploader("Telemetry CSV", type=["csv"], label_visibility="collapsed")
         if uploaded is None:
-            st.caption("Files stay on this machine.")
+            st.caption(
+                "Normal transfer is Wi-Fi sync. This offline fallback preserves the raw CSV."
+            )
             return
         try:
             frame = pd.read_csv(io.BytesIO(uploaded.getvalue()), low_memory=False)
@@ -184,11 +202,121 @@ def _import_panel() -> None:
         session_id = session_ids[0]
         st.success(f"Valid session: {session_id}")
         if st.button("Import session", type="primary", width="stretch"):
-            destination = IMPORT_ROOT / session_id / "telemetry.csv"
+            destination = RAW_ROOT / "manual-import" / session_id / "telemetry.csv"
             destination.parent.mkdir(parents=True, exist_ok=True)
+            if destination.exists():
+                st.info("This session already exists; the raw file was not overwritten.")
+                return
             destination.write_bytes(uploaded.getvalue())
             _load_session.clear()
             st.rerun()
+
+
+def _sync_page() -> None:
+    st.header("Devices / Sync")
+    st.markdown(
+        "Bring the logger home, connect USB-C, and explicitly enable **SYNC** mode. "
+        "microSD remains the source of truth; imports are copied, hash-verified, and never deleted remotely."
+    )
+    source = st.radio(
+        "Logger source",
+        ("Development logger (synthetic)", "Home LAN logger"),
+        horizontal=True,
+    )
+    token: str | None = None
+    if source == "Home LAN logger":
+        address = st.text_input("Logger address", value=DEFAULT_DEVICE_URL)
+        token = st.text_input("Device token (needed for acknowledgement)", type="password") or None
+        client: LoggerClient = HttpLoggerClient(address)
+        st.caption(
+            "The app first tries the logger's mDNS name. You can enter its LAN IP if mDNS is unavailable."
+        )
+    else:
+        client = FilesystemLoggerClient(DEMO_ROOT)
+        st.info(
+            "Synthetic device transport: exercises the same manifests, hashes, deduplication, QA, and catalog flow."
+        )
+
+    try:
+        device = client.device()
+        manifests = [client.manifest(session_id) for session_id in client.session_ids()]
+    except (SyncError, OSError, ValueError) as error:
+        st.error(f"Logger unavailable: {error}")
+        return
+
+    store = SessionStore(RAW_ROOT, PROCESSED_ROOT)
+    known = store.known_sessions(device.device_id)
+    pending = [manifest for manifest in manifests if manifest.session_id not in known]
+    pending_bytes = sum(item.size for manifest in pending for item in manifest.files)
+    status_color = "ONLINE" if device.mode.upper() == "SYNC" else device.mode.upper()
+    st.subheader(f"{device.name} — {status_color}")
+    columns = st.columns(6)
+    columns[0].metric("Mode", device.mode)
+    columns[1].metric("Battery", f"{device.battery_percent:.0f}%")
+    columns[2].metric("Firmware", device.firmware_version)
+    columns[3].metric("SD free", f"{device.sd_free_percent:.0f}%")
+    columns[4].metric("New sessions", len(pending))
+    columns[5].metric("Pending data", f"{pending_bytes / (1024 * 1024):.1f} MB")
+
+    session_rows = []
+    for manifest in manifests:
+        session_rows.append(
+            {
+                "session_id": manifest.session_id,
+                "duration_min": manifest.duration_s / 60.0,
+                "config_id": manifest.vesc_config_id,
+                "schema": manifest.telemetry_schema_version,
+                "files": len(manifest.files),
+                "size_MB": sum(item.size for item in manifest.files) / (1024 * 1024),
+                "local_status": "IMPORTED" if manifest.session_id in known else "NEW",
+            }
+        )
+    st.dataframe(pd.DataFrame(session_rows).round(2), width="stretch", hide_index=True)
+
+    if st.button("SYNC NOW", type="primary", disabled=not pending):
+        bar = st.progress(0.0, text="Preparing transfer...")
+        total = max(1, pending_bytes)
+        completed_by_file: dict[tuple[str, str], int] = {}
+
+        def update_progress(session_id: str, filename: str, completed: int, size: int) -> None:
+            completed_by_file[(session_id, filename)] = completed
+            transferred = sum(completed_by_file.values())
+            bar.progress(
+                min(1.0, transferred / total),
+                text=f"{session_id} • {filename} • {completed / max(1, size):.0%}",
+            )
+
+        try:
+            results = sync_logger(
+                client,
+                store,
+                token=token,
+                progress=update_progress,
+                session_ids=[manifest.session_id for manifest in pending],
+            )
+        except SyncError as error:
+            st.error(str(error))
+            st.warning(
+                "Any verified raw files remain local. Restarting sync resumes .part downloads and does not duplicate sessions."
+            )
+            return
+        bar.progress(1.0, text="Transfer, checksum, validation, and import complete")
+        imported = sum(result.status.startswith("imported") for result in results)
+        verified = sum(result.verified_files for result in results)
+        ack_pending = sum("ack_pending" in result.status for result in results)
+        st.success(f"{imported} sessions imported • {verified} files verified")
+        if ack_pending:
+            st.warning(
+                f"{ack_pending} logger acknowledgement(s) pending. Check the device token and sync again; "
+                "the app will not duplicate local sessions."
+            )
+        _load_session.clear()
+        st.rerun()
+
+    st.caption(
+        "Downloads are read-only. Configuration writes and firmware updates require authentication; "
+        "VESC writes are not exposed. Logger raw data is retained until you explicitly manage it on-device."
+    )
 
 
 def _status_card(level: str, headline: str, reasons: tuple[str, ...]) -> None:
@@ -1040,7 +1168,9 @@ def main() -> None:
     st.caption(
         f"Session {session_id} • {summary['scenario']} • Configuration {summary['config_id']}"
     )
-    if page == "Flight Deck":
+    if page == "Devices / Sync":
+        _sync_page()
+    elif page == "Flight Deck":
         _flight_deck(telemetry, events, rides, summary)
     elif page == "Launch Lab":
         _launch_lab(telemetry, events)

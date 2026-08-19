@@ -80,6 +80,12 @@ OPTIONAL_GPS_COLUMNS: tuple[str, ...] = (
     "gps_course_deg",
     "gps_fix_quality",
 )
+EXTENDED_GPS_COLUMNS: tuple[str, ...] = (
+    "gnss_time_utc",
+    "gps_altitude_m",
+    "gps_satellites",
+    "gps_horizontal_accuracy_m",
+)
 
 SYNTHETIC_ONLY_COLUMNS: tuple[str, ...] = (
     "sim_state",
@@ -160,6 +166,8 @@ def validate_telemetry(frame: pd.DataFrame) -> ValidationReport:
         "vesc_duty": (-1.0, 1.0),
         "water_adc": (0.0, 4095.0),
         "gps_fix_quality": (0.0, 10.0),
+        "gps_satellites": (0.0, 80.0),
+        "gps_horizontal_accuracy_m": (0.0, 1000.0),
     }
     for column, (low, high) in range_checks.items():
         if column not in frame:
@@ -194,6 +202,53 @@ def validate_telemetry(frame: pd.DataFrame) -> ValidationReport:
                 "error",
                 "partial_gps_schema",
                 "GPS data must include all optional GPS columns or none",
+            )
+        )
+    extended_gps_present = set(EXTENDED_GPS_COLUMNS).intersection(frame.columns)
+    if extended_gps_present and extended_gps_present != set(EXTENDED_GPS_COLUMNS):
+        report.issues.append(
+            ValidationIssue(
+                "error",
+                "partial_extended_gps_schema",
+                "Extended GPS data must include time, altitude, satellites, and accuracy together",
+            )
+        )
+
+    numeric = frame.select_dtypes(include="number")
+    missing_fraction = float(numeric.isna().mean().mean()) if not numeric.empty else 0.0
+    if missing_fraction > 0.10:
+        report.issues.append(
+            ValidationIssue(
+                "warning",
+                "numeric_missing_rate",
+                f"Numeric telemetry is {missing_fraction:.1%} missing",
+            )
+        )
+
+    intervals = frame.groupby("session_id", sort=False)["timestamp_ms"].diff().dropna()
+    if not intervals.empty:
+        median_interval = float(intervals.median())
+        gap_count = int((intervals > max(1000.0, median_interval * 3.0)).sum())
+        if gap_count:
+            report.issues.append(
+                ValidationIssue(
+                    "warning", "telemetry_gaps", "VESC/logger timestamp gaps detected", gap_count
+                )
+            )
+
+    accel_clipped = int(
+        (frame[["accel_x_g", "accel_y_g", "accel_z_g"]].abs().max(axis=1) >= 7.95).sum()
+    )
+    gyro_clipped = int(
+        (frame[["gyro_x_dps", "gyro_y_dps", "gyro_z_dps"]].abs().max(axis=1) >= 510.0).sum()
+    )
+    if accel_clipped or gyro_clipped:
+        report.issues.append(
+            ValidationIssue(
+                "warning",
+                "imu_clipping",
+                "IMU samples reached the configured measurement range",
+                accel_clipped + gyro_clipped,
             )
         )
     return report

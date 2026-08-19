@@ -20,14 +20,17 @@ class SessionFiles:
     events: Path | None
     rides: Path | None
     summary: Path | None
+    manifest: Path | None = None
+    config: Path | None = None
 
 
-def discover_sessions(root: Path | str) -> list[SessionFiles]:
+def discover_sessions(root: Path | str, *, recursive: bool = False) -> list[SessionFiles]:
     base = Path(root)
     sessions: list[SessionFiles] = []
     if not base.exists():
         return sessions
-    for telemetry_path in sorted(base.glob("*/telemetry.csv")):
+    pattern = "**/telemetry.csv" if recursive else "*/telemetry.csv"
+    for telemetry_path in sorted(base.glob(pattern)):
         directory = telemetry_path.parent
         sessions.append(
             SessionFiles(
@@ -39,6 +42,14 @@ def discover_sessions(root: Path | str) -> list[SessionFiles]:
                 summary=(
                     (directory / "summary.json") if (directory / "summary.json").exists() else None
                 ),
+                manifest=(
+                    (directory / "manifest.json")
+                    if (directory / "manifest.json").exists()
+                    else None
+                ),
+                config=(
+                    (directory / "config.json") if (directory / "config.json").exists() else None
+                ),
             )
         )
     return sessions
@@ -46,7 +57,7 @@ def discover_sessions(root: Path | str) -> list[SessionFiles]:
 
 def read_telemetry(path: Path | str) -> pd.DataFrame:
     frame = pd.read_csv(path, low_memory=False)
-    for column in ("water_alarm", "sd_ok"):
+    for column in ("water_alarm", "water_detected", "water_latched", "sd_ok"):
         if column in frame:
             if frame[column].dtype == object:
                 frame[column] = (

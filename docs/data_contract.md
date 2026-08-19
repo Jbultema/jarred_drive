@@ -13,6 +13,11 @@ Optional GNSS is all-or-nothing:
 A log without GNSS remains valid and supports all non-spatial analytics. The desktop application treats
 unknown additional columns as forward-compatible observations.
 
+Sessions are wrapped by manifest schema `1.0`. A manifest binds `device_id`, `session_id`, telemetry schema,
+firmware/hardware revisions, VESC configuration identity, timestamps, byte sizes, and SHA-256 hashes. A file
+is not imported or acknowledged until every declared byte count and digest matches. Manifest filenames must
+be single safe path components; traversal and duplicates are rejected.
+
 `remote_ok` is nullable because the passive VESC UART path cannot prove VX3 link status. Blank means UNKNOWN,
 not OK. The dashboard warns on UNKNOWN and stops only when a future independent input explicitly reports
 false. It never infers remote health from ordinary VESC telemetry.
@@ -41,6 +46,10 @@ behavior, electrical phases, and logger monitoring. Their definitions and limita
 3. Increment the schema version for renamed fields, new required fields, or semantic/unit changes.
 4. Preserve the original raw file and regenerate derived tables after migrations.
 5. Store the VESC configuration ID with every row and keep the immutable snapshot beside the session.
+
+Import QA also checks timestamp monotonicity/duplicates/gaps, numeric missingness, plausible ranges, GNSS
+schema completeness, IMU clipping, and the existing health channels. A QA warning is retained in
+`import_qa.json`; a structural/error-level failure preserves the raw download but prevents analytical import.
 
 Use `configs/vesc_snapshot_template.json` to record a VESC Tool snapshot, then register it locally with
 `jarred-drive register-config`. Set the same ID in `firmware/include/device_config.hpp` before compiling the

@@ -1,0 +1,25 @@
+{
+  "schema_version": "1.0",
+  "telemetry_schema_version": "1.0.0",
+  "device_id": "jarred-drive-sim-01",
+  "session_id": "2026-08-18-001",
+  "start_time_utc": "2026-08-18T16:00:00Z",
+  "end_time_utc": "2026-08-18T16:07:32.900000Z",
+  "duration_s": 452.9,
+  "firmware_version": "0.3.1-simulated",
+  "hardware_revision": "logger-v1-simulated",
+  "vesc_config_id": "FOIL_003",
+  "vesc_config_hash": "684e7d58a271fc636e1b1dc02f1df19a730ab54587348507a2b60183d4d01103",
+  "files": [
+    {
+      "name": "telemetry.csv",
+      "size": 1649805,
+      "sha256": "99203b85f36219c11613862966529652000054ee50ca575d231cfe125532bf96"
+    },
+    {
+      "name": "config.json",
+      "size": 248,
+      "sha256": "684e7d58a271fc636e1b1dc02f1df19a730ab54587348507a2b60183d4d01103"
+    }
+  ]
+}

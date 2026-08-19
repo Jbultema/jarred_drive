@@ -18,13 +18,16 @@ VESC firmware, configuration snapshot, and measured values for each gate.
    behavior remains unchanged when the ESP is disconnected/rebooted.
 9. **Fault injection:** exercise missing SD, invalid NTC, hot-sensor simulation, VESC fault, water alarm, UART
    loss, and brownout/reboot; verify raw log integrity and dominant warnings.
-10. **Progressive load:** 12S2P then 12S3P, prop removed/restrained as required by the build guide; inspect
+10. **Home sync:** with propulsion disconnected, verify Wi-Fi remains absent during RECORDING, STOP closes the
+    session, SYNC joins only the intended LAN, mDNS resolves, interrupted Range downloads resume, altered files
+    fail SHA-256, duplicate syncs are idempotent, and acknowledgement never deletes SD files.
+11. **Progressive load:** 12S2P then 12S3P, prop removed/restrained as required by the build guide; inspect
     connectors, current path, voltage sag, temperatures, and sampling gaps.
-11. **Sealed enclosure:** dry leak testing, controlled droplet, cable strain relief, lid clearance, logging during
+12. **Sealed enclosure:** dry leak testing, controlled droplet, cable strain relief, lid clearance, logging during
     movement, and post-test corrosion inspection.
-12. **Restrained wet propulsion:** only after control, failsafe, telemetry, temperature protection, retention,
+13. **Restrained wet propulsion:** only after control, failsafe, telemetry, temperature protection, retention,
     and leak sensing pass independently.
-13. **Labeled field sessions:** manually annotate at least 5–10 sessions before evaluating or training foil-state
+14. **Labeled field sessions:** manually annotate at least 5–10 sessions before evaluating or training foil-state
     classification. Compare detection precision/recall by event type; do not promote guessed thresholds.
 
-No repository status, unit test, synthetic result, or successful compile closes gates 3–13.
+No repository status, unit test, synthetic result, or successful compile closes gates 3–14.

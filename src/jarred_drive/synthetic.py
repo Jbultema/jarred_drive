@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import numpy as np
@@ -21,6 +22,7 @@ from jarred_drive.analytics import (
 from jarred_drive.config import AppConfig
 from jarred_drive.events import detect_events
 from jarred_drive.schema import SCHEMA_VERSION, RideState
+from jarred_drive.sync import MANIFEST_SCHEMA_VERSION, sha256_file
 
 
 @dataclass(frozen=True)
@@ -373,6 +375,23 @@ def write_demo_package(output: Path, config: AppConfig) -> list[Path]:
         "description": "Deterministic synthetic Jarred Drive sessions; not hardware observations.",
         "sessions": manifest_sessions,
     }
+    device_path = output / "device.json"
+    device_path.write_text(
+        json.dumps(
+            {
+                "device_id": "jarred-drive-sim-01",
+                "name": "Jarred Drive Development Logger",
+                "hardware_revision": "logger-v1-simulated",
+                "firmware_version": "0.3.1-simulated",
+                "mode": "SYNC",
+                "battery_percent": 83.0,
+                "sd_free_percent": 71.0,
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    written.append(device_path)
     summaries: list[dict[str, object]] = []
     for config_id, snapshot in CONFIG_SNAPSHOTS.items():
         path = output / "configs" / f"{config_id}.json"
@@ -412,7 +431,38 @@ def write_demo_package(output: Path, config: AppConfig) -> list[Path]:
         electrical_phases.to_csv(paths["electrical_phases"], index=False, float_format="%.4f")
         paths["monitoring"].write_text(json.dumps(monitoring, indent=2, default=float) + "\n")
         paths["summary"].write_text(json.dumps(summary, indent=2, default=float) + "\n")
+        config_path = session_dir / "config.json"
+        config_payload = {"config_id": scenario.config_id, **CONFIG_SNAPSHOTS[scenario.config_id]}
+        config_path.write_text(json.dumps(config_payload, indent=2) + "\n")
+        start = datetime.fromisoformat(f"{scenario.session_id[:10]}T16:00:00").replace(tzinfo=UTC)
+        duration_s = float(raw["timestamp_ms"].iloc[-1] - raw["timestamp_ms"].iloc[0]) / 1000.0
+        session_manifest = {
+            "schema_version": MANIFEST_SCHEMA_VERSION,
+            "telemetry_schema_version": SCHEMA_VERSION,
+            "device_id": "jarred-drive-sim-01",
+            "session_id": scenario.session_id,
+            "start_time_utc": start.isoformat().replace("+00:00", "Z"),
+            "end_time_utc": (start + timedelta(seconds=duration_s))
+            .isoformat()
+            .replace("+00:00", "Z"),
+            "duration_s": duration_s,
+            "firmware_version": "0.3.1-simulated",
+            "hardware_revision": "logger-v1-simulated",
+            "vesc_config_id": scenario.config_id,
+            "vesc_config_hash": sha256_file(config_path),
+            "files": [
+                {
+                    "name": path.name,
+                    "size": path.stat().st_size,
+                    "sha256": sha256_file(path),
+                }
+                for path in (paths["telemetry"], config_path)
+            ],
+        }
+        session_manifest_path = session_dir / "manifest.json"
+        session_manifest_path.write_text(json.dumps(session_manifest, indent=2) + "\n")
         written.extend(paths.values())
+        written.extend([config_path, session_manifest_path])
         summaries.append(summary)
         manifest_sessions.append(
             {

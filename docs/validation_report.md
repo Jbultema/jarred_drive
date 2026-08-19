@@ -4,20 +4,23 @@ Validated on 2026-08-19 using Python 3.12.6, Poetry 1.8.3, and the checked-in lo
 
 ## Software evidence
 
-- `make check` passed: Ruff, Black, mypy across 22 source files, 33 pytest cases, four native
+- `make check` passed: Ruff, Black, mypy across 24 source files, 39 pytest cases, six native
   firmware safety-policy tests, and `poetry check --lock`.
 - `make firmware-hardware` compiled the `waveshare_esp32s3` environment successfully. The resulting
-  image used 21,292 bytes of RAM (6.5%) and 415,405 bytes of flash (6.3%). This was a compile check,
+  image used 47,540 bytes of RAM (14.5%) and 875,885 bytes of flash (13.4%). This was a compile check,
   not a physical flash or sensor test.
-- Streamlit AppTest exercised all nine pages against all three scenarios: Flight Deck, Launch Lab, Ride
-  Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotate, and Raw Data.
+- Streamlit AppTest exercised all ten pages against all three scenarios: Devices / Sync, Flight Deck, Launch
+  Lab, Ride Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotate, and Raw Data.
+- Sync tests exercised complete verified imports, duplicate-safe retries, checksum failures, unsafe manifest
+  paths, RECORDING-mode rejection, session-ID collisions, and retryable acknowledgement failures. Each valid
+  synthetic session produced an immutable raw hierarchy, QA report, DuckDB catalog row, and Parquet file.
 - A real Streamlit server returned HTTP 200 and a healthy status. Headless Chrome reached the app with
   a `CONNECTED` state; the final Flight Deck was visually inspected at 1600 x 1100. Computed heading
   and metric text colors were `rgb(230, 251, 255)` against the dark dashboard. Launch curves, crash windows,
   the meter-scaled GPS trajectory, turn dynamics, and thermal diagnostics were visually inspected at
   1720 x 1200. GPS plots were verified without network map tiles, and long diagnostics were verified in a
   GPU-disabled browser without WebGL errors.
-- The committed synthetic package contains 35 artifacts across three deterministic coupled scenarios,
+- The committed synthetic package contains 42 artifacts across three deterministic coupled scenarios,
   including raw telemetry, launch/crash/thermal/electrical/logger derived tables, and immutable configuration
   snapshots. The safety-drill session renders a latched STOP SYSTEM state.
 
@@ -37,5 +40,6 @@ Software completion does not establish that the unbuilt hardware is safe or fiel
 on-water use, complete every gate in [hardware_validation.md](hardware_validation.md), including physical
 firmware flash/display checks, exact board pin confirmation, QMI8658 scaling, each NTC channel, water-sensor
 calibration, microSD behavior, read-only VESC UART verification, fault injection, enclosure/EMI testing, and
-classifier calibration from real sessions. GPS additionally requires and must validate a separate 3.3 V UART
+physical home-LAN sync/resume/radio-state behavior, and classifier calibration from real sessions. GPS
+additionally requires and must validate a separate 3.3 V UART
 NMEA GNSS receiver; neither selected board includes one.

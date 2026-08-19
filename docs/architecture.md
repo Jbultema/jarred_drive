@@ -10,11 +10,14 @@ VX3 --PPM--> VESC --3 phase--> motor
 6 NTCs ----> ESP32-S3 <---- QMI8658 IMU
 enclosure -->    |  |
 water probe -->  |  +---- local high-contrast status display
-                 +------- microSD raw CSV
+                 +------- microSD authoritative session folders
+                              |
+                    home only | Wi-Fi REST + SHA-256
+                              v
+                    immutable local raw copy
                               |
                               v
-                    Streamlit application
-                  raw -> events -> rides -> sessions
+                 DuckDB/Parquet -> Streamlit analytics
 ```
 
 The propulsion path remains complete if the ESP32 is absent, rebooting, or failed. The firmware polls VESC
@@ -24,6 +27,8 @@ telemetry but exposes no command or configuration-write API.
 
 - `firmware/`: on-water observer/logger and deterministic local safety presentation.
 - `src/jarred_drive/schema.py`: versioned logger contract and import validation.
+- `src/jarred_drive/sync.py`: device protocol, resumable/hash-verified transfer, raw store, and analytical
+  catalog.
 - `src/jarred_drive/events.py`: replaceable, transparent baseline event detector.
 - `src/jarred_drive/analytics.py`: launch, crash, ride, thermal, electrical, logger-health, session, and
   progression metrics.
@@ -33,6 +38,17 @@ telemetry but exposes no command or configuration-write API.
 
 Raw telemetry is immutable input. Events, rides, and summaries are derivative products and should be
 regenerated whenever detection logic changes.
+
+## Logger state model
+
+The firmware has explicit PRE_RIDE, RECORDING, POST_RIDE, CHARGING_IDLE, and SYNC states. Radios are allowed
+only in SYNC. RECORDING must stop and finalize its open files before SYNC can begin. The present bench control
+uses serial `START`, `STOP`, `SYNC`, and `IDLE` commands until the final enclosure button mapping is validated.
+The firmware currently starts recording at boot to preserve the existing logger behavior.
+
+The sync transport is deliberately ordinary: the ESP advertises `jarred-drive.local`, publishes read-only
+device/session endpoints, serves files with HTTP Range support, and authenticates the write-side sync
+acknowledgement. The acknowledgement records transfer state only; it never deletes raw files.
 
 ## Operating modes
 
