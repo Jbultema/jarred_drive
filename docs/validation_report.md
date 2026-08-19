@@ -11,6 +11,13 @@ Validated on 2026-08-19 using Python 3.12.6, Poetry 1.8.3, and the checked-in lo
   not a physical flash or sensor test.
 - Streamlit AppTest exercised all ten pages against all three scenarios: Devices / Sync, Flight Deck, Launch
   Lab, Ride Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotate, and Raw Data.
+- The branding pass added four repository-local raster assets, a responsive Flight Deck hero, a branded
+  sidebar/app icon, and an offline-safe embedded-image path. AppTest confirmed both brand and hero markup
+  render without exceptions; the local server returned HTTP 200 on the launcher-selected port 8601.
+- The canonical product mark depicts the battery at the lumbar region, a short coiled lead terminating at the
+  board tail, and a compact propeller-drive pod approximately one-third down the mast. This is visual design
+  intent, not evidence that the physical cable, connector, mount, or propeller arrangement has passed safety
+  validation.
 - The redesigned Devices / Sync and Flight Deck views were rendered at 1720 x 1200 in GPU-disabled headless
   Chrome. Navigation, page hierarchy, status treatments, metric cards, tables, timeline, power traces, and the
   GPS route were visually inspected. High-density scatter/launch plots are pinned to SVG so they do not leave

@@ -23,11 +23,18 @@ VESC firmware, configuration snapshot, and measured values for each gate.
     fail SHA-256, duplicate syncs are idempotent, and acknowledgement never deletes SD files.
 11. **Progressive load:** 12S2P then 12S3P, prop removed/restrained as required by the build guide; inspect
     connectors, current path, voltage sag, temperatures, and sampling gaps.
-12. **Sealed enclosure:** dry leak testing, controlled droplet, cable strain relief, lid clearance, logging during
+12. **Lumbar umbilical and submerged drive:** with propulsion electrically isolated, validate the final short
+    coiled lead from the lumbar pack to the rear-of-board connector across the full riding range of motion.
+    Record relaxed/extended length, connector retention and release behavior, bend radius, abrasion and snag
+    exposure, waterproofing, strain relief at both ends, and a controlled rider/board separation drill. Confirm
+    that no loose external lead descends the mast. Verify the compact motor/propeller installation at the
+    intended position approximately one-third down from the board, including fastener retention, propeller
+    clearance/guarding, cable containment, mast loading, and compatibility with the lower foil and stabilizer.
+13. **Sealed enclosure:** dry leak testing, controlled droplet, cable strain relief, lid clearance, logging during
     movement, and post-test corrosion inspection.
-13. **Restrained wet propulsion:** only after control, failsafe, telemetry, temperature protection, retention,
+14. **Restrained wet propulsion:** only after control, failsafe, telemetry, temperature protection, retention,
     and leak sensing pass independently.
-14. **Labeled field sessions:** manually annotate at least 5–10 sessions before evaluating or training foil-state
+15. **Labeled field sessions:** manually annotate at least 5–10 sessions before evaluating or training foil-state
     classification. Compare detection precision/recall by event type; do not promote guessed thresholds.
 
-No repository status, unit test, synthetic result, or successful compile closes gates 3–14.
+No repository status, unit test, synthetic result, or successful compile closes gates 3–15.

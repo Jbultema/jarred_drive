@@ -2,6 +2,31 @@
 
 Jarred Drive has two deliberately independent runtimes.
 
+## Physical propulsion topology
+
+```text
+rider lumbar battery pack
+          |
+          | short coiled flexible umbilical
+          v
+rear-of-board connector
+          |
+          | internal / mechanically managed power path
+          v
+compact motor pod + propeller  <- approximately 1/3 down from board
+          |
+          v
+hydrofoil wing                 <- bottom of mast
+```
+
+The exterior coiled lead ends at the board's rear connector. It must not be represented as a loose cable
+descending the mast. The compact propeller drive is high on the mast—approximately one-third of the
+board-to-foil distance down from the board—while the lifting wing remains at the mast bottom. Final cable
+routing, waterproof bulkheads, strain relief, disconnect behavior, propeller guarding, and mechanical
+placement remain physical validation items.
+
+## Control and telemetry topology
+
 ```text
 VX3 --PPM--> VESC --3 phase--> motor
                |

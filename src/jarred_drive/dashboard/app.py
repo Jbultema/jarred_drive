@@ -5,6 +5,7 @@ Run with: poetry run streamlit run src/jarred_drive/dashboard/app.py
 
 from __future__ import annotations
 
+import base64
 import io
 from html import escape
 from pathlib import Path
@@ -55,7 +56,17 @@ RAW_ROOT = ROOT / "data" / "raw"
 PROCESSED_ROOT = ROOT / "data" / "processed"
 ANNOTATION_ROOT = ROOT / "data" / "annotations"
 CONFIG_SNAPSHOT_ROOT = ROOT / "data" / "configs"
+BRAND_ROOT = ROOT / "assets" / "branding"
+BRAND_MARK = BRAND_ROOT / "jarred-drive-mark.png"
+BRAND_ICON = BRAND_ROOT / "jarred-drive-icon.png"
+BRAND_HERO = BRAND_ROOT / "jarred-drive-hero.png"
 CONFIG = load_config(ROOT / "configs" / "system.yaml")
+
+
+def _asset_uri(path: Path) -> str:
+    """Return a local PNG as an offline-safe data URI."""
+    return f"data:image/png;base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
+
 
 NAV_ITEMS = (
     "Devices / Sync",
@@ -137,7 +148,7 @@ px.defaults.color_discrete_sequence = JD_COLORS
 
 st.set_page_config(
     page_title="Jarred Drive",
-    page_icon="⚡",
+    page_icon=str(BRAND_ICON),
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -177,15 +188,12 @@ st.markdown(
     }
     [data-testid="stSidebar"] [data-testid="stSidebarContent"] { padding-top: 1.7rem; }
     [data-testid="stSidebar"] hr { border-color: var(--jd-line); }
-    .jd-brand-wrap { display: flex; align-items: center; gap: .75rem; margin: .1rem 0 .2rem; }
-    .jd-mark {
-        width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px;
-        color: #05101a; font-weight: 950; font-size: 1.3rem;
-        background: linear-gradient(145deg, #79f0ff, #25bdd9);
-        box-shadow: 0 0 24px rgba(77,228,255,.24), inset 0 1px 0 rgba(255,255,255,.55);
-    }
+    .jd-brand-wrap { display: flex; align-items: center; gap: .7rem; margin: -.25rem 0 .1rem; }
+    .jd-brand-mark { width: 54px; height: 54px; padding:3px; object-fit: contain; border-radius:13px;
+        background:#fff; border:1px solid rgba(77,228,255,.22); box-shadow:0 0 18px rgba(77,228,255,.12); }
     .jd-brand { letter-spacing: .13em; font-weight: 850; font-size: 1.06rem; color: var(--jd-text); }
-    .jd-subtitle { color: #5fb9c8; font-size: .62rem; letter-spacing: .16em; margin: 0 0 1.45rem 3.15rem; }
+    .jd-brand-copy { min-width: 0; }
+    .jd-subtitle { color: #5fb9c8; font-size: .58rem; letter-spacing: .14em; margin-top: .16rem; }
     .jd-nav-label { color: #547386; font-size: .62rem; font-weight: 750; letter-spacing: .18em; margin: 1.2rem 0 .45rem; }
     [data-testid="stSidebar"] [role="radiogroup"] { gap: .26rem; }
     [data-testid="stSidebar"] [role="radiogroup"] label {
@@ -228,6 +236,24 @@ st.markdown(
                border:1px solid rgba(105,149,174,.17); color:#91adbf; font-size:.67rem; letter-spacing:.03em; }
     .jd-chip strong { color:#dff8ff; font-weight:650; }
     .jd-divider { height:1px; margin:.2rem 0 1.15rem; background:linear-gradient(90deg,var(--jd-line),transparent 78%); }
+    .jd-hero {
+        position:relative; overflow:hidden; min-height:255px; margin:.15rem 0 1.3rem;
+        border:1px solid rgba(102,184,211,.24); border-radius:20px;
+        background-size:cover; background-position:center 53%;
+        box-shadow:0 24px 70px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    .jd-hero::before { content:""; position:absolute; inset:0;
+        background:linear-gradient(90deg,rgba(3,11,20,.96) 0%,rgba(4,15,25,.78) 39%,rgba(5,15,24,.18) 72%),
+                   linear-gradient(0deg,rgba(4,13,22,.8),transparent 55%); }
+    .jd-hero-copy { position:relative; z-index:1; max-width:520px; padding:2.25rem 2.2rem; }
+    .jd-hero-kicker { color:var(--jd-cyan); font-size:.61rem; font-weight:850; letter-spacing:.2em; text-transform:uppercase; }
+    .jd-hero-title { color:#f3fbff; font-size:1.55rem; line-height:1.08; font-weight:780; letter-spacing:-.025em; margin:.45rem 0 .55rem; }
+    .jd-hero-text { color:#a9c1d0; font-size:.81rem; line-height:1.55; max-width:430px; }
+    .jd-hero-system { display:inline-flex; gap:.42rem; align-items:center; margin-top:1.05rem; padding:.34rem .62rem;
+        border:1px solid rgba(77,228,255,.22); border-radius:999px; background:rgba(5,20,31,.56);
+        color:#dffaff; font-size:.64rem; letter-spacing:.06em; }
+    .jd-hero-system::before { content:""; width:6px; height:6px; border-radius:50%; background:var(--jd-green);
+        box-shadow:0 0 10px rgba(94,229,174,.75); }
     [data-testid="stMetric"] {
         position: relative; overflow: hidden; min-height: 108px;
         background: linear-gradient(145deg, rgba(16,36,54,.91), rgba(9,23,36,.76));
@@ -286,7 +312,8 @@ st.markdown(
     .jd-device-name { color:var(--jd-text);font-weight:720;font-size:1rem; }
     .jd-device-meta { color:#7895a8;font-size:.72rem;margin-top:.18rem; }
     .jd-online { color:var(--jd-green);font-size:.66rem;font-weight:800;letter-spacing:.13em; }
-    @media (max-width: 900px) { .block-container { padding: 1.4rem 1rem 4rem; } h1 { font-size:1.85rem!important; } }
+    @media (max-width: 900px) { .block-container { padding: 1.4rem 1rem 4rem; } h1 { font-size:1.85rem!important; }
+        .jd-hero { min-height:225px; background-position:64% center; } .jd-hero-copy { padding:1.55rem 1.35rem; max-width:78%; } }
 </style>
 """,
     unsafe_allow_html=True,
@@ -1322,10 +1349,12 @@ def _raw_page(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
 
 
 def main() -> None:
+    brand_mark_uri = _asset_uri(BRAND_MARK)
+    hero_uri = _asset_uri(BRAND_HERO)
     st.sidebar.markdown(
-        '<div class="jd-brand-wrap"><div class="jd-mark">J</div>'
-        '<div class="jd-brand">JARRED DRIVE</div></div>'
-        '<div class="jd-subtitle">FOIL INTELLIGENCE SYSTEM</div>',
+        f'<div class="jd-brand-wrap"><img class="jd-brand-mark" src="{brand_mark_uri}" alt="Jarred Drive rider with lumbar pack, coiled lead, mast motor and propeller, and foil">'
+        '<div class="jd-brand-copy"><div class="jd-brand">JARRED DRIVE</div>'
+        '<div class="jd-subtitle">FOIL INTELLIGENCE SYSTEM</div></div></div>',
         unsafe_allow_html=True,
     )
     _import_panel()
@@ -1387,6 +1416,15 @@ def main() -> None:
         f'<div class="jd-meta-row">{chips}</div><div class="jd-divider"></div>',
         unsafe_allow_html=True,
     )
+    if page == "Flight Deck":
+        st.markdown(
+            f'<section class="jd-hero" style="background-image:url(\'{hero_uri}\')">'
+            '<div class="jd-hero-copy"><div class="jd-hero-kicker">Lumbar-powered · rider-developed</div>'
+            '<div class="jd-hero-title">Turn every launch, foil run, and fall into design evidence.</div>'
+            '<div class="jd-hero-text">Jarred Drive connects propulsion, thermal, motion, and GPS telemetry into one local-first session record—built to improve both the machine and the rider.</div>'
+            '<div class="jd-hero-system">SESSION TELEMETRY READY</div></div></section>',
+            unsafe_allow_html=True,
+        )
     if page == "Devices / Sync":
         _sync_page()
     elif page == "Flight Deck":

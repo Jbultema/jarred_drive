@@ -17,6 +17,9 @@ mechanical system safe by itself.
 - A display or SD failure raises a warning but cannot interrupt motor control.
 - Passive UART cannot observe VX3 link state; UNKNOWN is displayed as a warning and is never mislabeled OK.
 - Synthetic limits and alerts are development examples until calibrated and validated on physical hardware.
+- The lumbar-to-board coiled umbilical, rear connector, contained mast wiring, motor mount, and exposed
+  propeller are physical safety items outside the logger's control. Their strain relief, separation behavior,
+  guarding, waterproofing, and retention require dedicated validation before powered riding.
 
 ## UI behavior
 
