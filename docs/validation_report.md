@@ -11,6 +11,10 @@ Validated on 2026-08-19 using Python 3.12.6, Poetry 1.8.3, and the checked-in lo
   not a physical flash or sensor test.
 - Streamlit AppTest exercised all ten pages against all three scenarios: Devices / Sync, Flight Deck, Launch
   Lab, Ride Dynamics, Thermal Lab, System Health, Tuning, Progress, Annotate, and Raw Data.
+- The redesigned Devices / Sync and Flight Deck views were rendered at 1720 x 1200 in GPU-disabled headless
+  Chrome. Navigation, page hierarchy, status treatments, metric cards, tables, timeline, power traces, and the
+  GPS route were visually inspected. High-density scatter/launch plots are pinned to SVG so they do not leave
+  blank WebGL panels on constrained browsers.
 - Sync tests exercised complete verified imports, duplicate-safe retries, checksum failures, unsafe manifest
   paths, RECORDING-mode rejection, session-ID collisions, and retryable acknowledgement failures. Each valid
   synthetic session produced an immutable raw hierarchy, QA report, DuckDB catalog row, and Parquet file.

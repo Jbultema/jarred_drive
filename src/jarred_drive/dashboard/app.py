@@ -6,12 +6,14 @@ Run with: poetry run streamlit run src/jarred_drive/dashboard/app.py
 from __future__ import annotations
 
 import io
+from html import escape
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
 import streamlit as st
 
 from jarred_drive.analytics import (
@@ -67,6 +69,30 @@ NAV_ITEMS = (
     "Annotate",
     "Raw Data",
 )
+NAV_ICONS = {
+    "Devices / Sync": "⇄",
+    "Flight Deck": "⌁",
+    "Launch Lab": "↗",
+    "Ride Dynamics": "∿",
+    "Thermal Lab": "◫",
+    "System Health": "✦",
+    "Tuning": "⌘",
+    "Progress": "▥",
+    "Annotate": "✎",
+    "Raw Data": "≡",
+}
+PAGE_DESCRIPTIONS = {
+    "Devices / Sync": "Secure home-base transfer, verification, and device readiness.",
+    "Flight Deck": "The whole session at a glance—from launch to last ride.",
+    "Launch Lab": "Power delivery, takeoff efficiency, and failed-start forensics.",
+    "Ride Dynamics": "Flight segments, recoveries, turns, and crash signatures.",
+    "Thermal Lab": "Heat accumulation across packs, propulsion, and ride phases.",
+    "System Health": "Electrical envelope, logger integrity, and sensor confidence.",
+    "Tuning": "Configuration provenance and controlled experiment comparison.",
+    "Progress": "Session-over-session development and rider progression.",
+    "Annotate": "Human-reviewed event labels for better future classifiers.",
+    "Raw Data": "Immutable observations, validation findings, and exports.",
+}
 STATE_COLORS = {
     str(RideState.IDLE): "#64748b",
     str(RideState.ACCELERATING): "#f59e0b",
@@ -74,6 +100,39 @@ STATE_COLORS = {
     str(RideState.TOUCHDOWN): "#fb7185",
     str(RideState.FALL): "#ef4444",
 }
+
+JD_COLORS = ["#4DE4FF", "#FFB547", "#FF667D", "#6EE7B7", "#9B8AFB", "#60A5FA"]
+pio.templates["jarred_drive"] = go.layout.Template(
+    layout={
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(7,17,31,0.12)",
+        "font": {"family": "Inter, Avenir Next, system-ui, sans-serif", "color": "#B8CBDA"},
+        "title": {"font": {"size": 17, "color": "#F3FBFF"}, "x": 0.02, "xanchor": "left"},
+        "colorway": JD_COLORS,
+        "hoverlabel": {
+            "bgcolor": "#102337",
+            "bordercolor": "#28465E",
+            "font": {"color": "#F3FBFF"},
+        },
+        "legend": {"font": {"color": "#A9BDCC"}, "title": {"font": {"color": "#EAF9FF"}}},
+        "xaxis": {
+            "gridcolor": "rgba(101,141,166,.14)",
+            "linecolor": "rgba(101,141,166,.22)",
+            "zerolinecolor": "rgba(101,141,166,.22)",
+            "title": {"font": {"color": "#8EA7B8"}},
+        },
+        "yaxis": {
+            "gridcolor": "rgba(101,141,166,.14)",
+            "linecolor": "rgba(101,141,166,.22)",
+            "zerolinecolor": "rgba(101,141,166,.22)",
+            "title": {"font": {"color": "#8EA7B8"}},
+        },
+        "margin": {"l": 52, "r": 30, "t": 62, "b": 48},
+    }
+)
+pio.templates.default = "jarred_drive"
+px.defaults.template = "jarred_drive"
+px.defaults.color_discrete_sequence = JD_COLORS
 
 
 st.set_page_config(
@@ -86,26 +145,148 @@ st.set_page_config(
 st.markdown(
     """
 <style>
-    :root { --jd-cyan: #22d3ee; --jd-navy: #07111f; --jd-panel: #0d1b2a; }
-    .stApp { background: linear-gradient(145deg, #07111f 0%, #0b1626 55%, #0e2230 100%); }
-    [data-testid="stSidebar"] { background: #07111f; border-right: 1px solid #1e3a4f; }
-    .jd-brand { letter-spacing: .16em; font-weight: 800; font-size: 1.35rem; color: #e6fbff; }
-    .jd-subtitle { color: #75d9e8; font-size: .72rem; letter-spacing: .13em; margin-bottom: 1.2rem; }
-    .jd-status { border-radius: 12px; padding: 1.1rem 1.25rem; margin: .3rem 0 1rem 0;
-                 background: #0d1b2a; border: 1px solid #1e3a4f; }
-    .jd-ready { border-left: 6px solid #2dd4bf; }
-    .jd-warning { border-left: 6px solid #f59e0b; }
-    .jd-stop { border-left: 6px solid #ef4444; background: #2a1118; }
-    .jd-status-label { font-size: .72rem; letter-spacing: .18em; color: #94a3b8; }
-    .jd-status-value { color: #e6fbff; font-size: 1.6rem; font-weight: 800; margin-top: .15rem; }
-    .jd-note { color: #94a3b8; font-size: .82rem; }
-    [data-testid="stMetric"] { background: rgba(13,27,42,.78); border: 1px solid #1e3a4f;
-                               border-radius: 10px; padding: .75rem 1rem; }
-    [data-testid="stMetricLabel"] { color: #94a3b8; }
-    [data-testid="stMetricValue"] { color: #e6fbff; }
-    h1, h2, h3 { color: #e6fbff; }
-    .stTabs [data-baseweb="tab-list"] { gap: .25rem; }
-    .stTabs [data-baseweb="tab"] { background: #0d1b2a; border-radius: 7px; }
+    :root {
+        --jd-cyan: #4de4ff; --jd-cyan-soft: rgba(77,228,255,.14);
+        --jd-navy: #050c15; --jd-panel: rgba(11,25,39,.86);
+        --jd-panel-hi: rgba(16,36,54,.92); --jd-line: rgba(106,157,187,.20);
+        --jd-text: #f3fbff; --jd-muted: #8fa8b9; --jd-green: #5ee5ae;
+        --jd-amber: #ffb547; --jd-red: #ff667d;
+    }
+    html, body, [class*="css"] { font-family: Inter, "Avenir Next", -apple-system, BlinkMacSystemFont, sans-serif; }
+    .stApp {
+        background:
+            radial-gradient(circle at 76% -8%, rgba(0,176,214,.13), transparent 28rem),
+            radial-gradient(circle at 18% 82%, rgba(27,88,126,.12), transparent 32rem),
+            linear-gradient(148deg, #050c15 0%, #071321 48%, #081827 100%);
+        color: var(--jd-text);
+    }
+    .stApp::before {
+        content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .22;
+        background-image: linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+                          linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px);
+        background-size: 42px 42px;
+        mask-image: linear-gradient(to bottom, black, transparent 68%);
+    }
+    header[data-testid="stHeader"] { background: transparent; }
+    [data-testid="stToolbar"] { visibility: hidden; }
+    #MainMenu, footer { visibility: hidden; }
+    .block-container { padding: 2.2rem 2.6rem 5rem; max-width: 1540px; }
+    [data-testid="stSidebar"] {
+        background: linear-gradient(180deg, rgba(5,13,22,.98), rgba(7,20,32,.98));
+        border-right: 1px solid var(--jd-line); box-shadow: 18px 0 60px rgba(0,0,0,.18);
+    }
+    [data-testid="stSidebar"] [data-testid="stSidebarContent"] { padding-top: 1.7rem; }
+    [data-testid="stSidebar"] hr { border-color: var(--jd-line); }
+    .jd-brand-wrap { display: flex; align-items: center; gap: .75rem; margin: .1rem 0 .2rem; }
+    .jd-mark {
+        width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px;
+        color: #05101a; font-weight: 950; font-size: 1.3rem;
+        background: linear-gradient(145deg, #79f0ff, #25bdd9);
+        box-shadow: 0 0 24px rgba(77,228,255,.24), inset 0 1px 0 rgba(255,255,255,.55);
+    }
+    .jd-brand { letter-spacing: .13em; font-weight: 850; font-size: 1.06rem; color: var(--jd-text); }
+    .jd-subtitle { color: #5fb9c8; font-size: .62rem; letter-spacing: .16em; margin: 0 0 1.45rem 3.15rem; }
+    .jd-nav-label { color: #547386; font-size: .62rem; font-weight: 750; letter-spacing: .18em; margin: 1.2rem 0 .45rem; }
+    [data-testid="stSidebar"] [role="radiogroup"] { gap: .26rem; }
+    [data-testid="stSidebar"] [role="radiogroup"] label {
+        border: 1px solid transparent; border-radius: 10px; padding: .48rem .62rem;
+        transition: all .16s ease; color: #9fb4c2;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:hover {
+        background: rgba(77,228,255,.06); border-color: rgba(77,228,255,.12); color: #effcff;
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] label:has(input:checked) {
+        background: linear-gradient(90deg, rgba(77,228,255,.16), rgba(77,228,255,.04));
+        border-color: rgba(77,228,255,.22); color: #f4fdff;
+        box-shadow: inset 3px 0 0 var(--jd-cyan);
+    }
+    [data-testid="stSidebar"] [role="radiogroup"] [data-testid="stMarkdownContainer"] p {
+        font-size: .83rem; font-weight: 620;
+    }
+    [data-testid="stSidebar"] [data-testid="stRadioOption"] > div > div > div:first-child {
+        display: none;
+    }
+    [data-testid="stSidebar"] label[data-testid="stWidgetLabel"] p {
+        color: #668397; font-size: .64rem; font-weight: 750; letter-spacing: .12em; text-transform: uppercase;
+    }
+    .jd-sidebar-foot {
+        margin-top: 1.25rem; padding: .75rem .85rem; border: 1px solid var(--jd-line);
+        border-radius: 11px; background: rgba(14,31,45,.55); color: #7894a7; font-size: .67rem;
+    }
+    .jd-live-dot { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:.45rem;
+        background:var(--jd-green); box-shadow:0 0 10px rgba(94,229,174,.7); }
+    h1 { font-size: 2.32rem !important; line-height: 1.04 !important; letter-spacing: -.035em !important;
+         font-weight: 780 !important; margin: .05rem 0 .25rem !important; color: var(--jd-text) !important; }
+    h2 { font-size: 1.42rem !important; letter-spacing: -.02em; color: var(--jd-text) !important;
+         margin-top: 1.9rem !important; }
+    h3 { font-size: 1.05rem !important; color: #dff8ff !important; letter-spacing: -.01em; }
+    .jd-eyebrow { color: var(--jd-cyan); font-size: .64rem; font-weight: 800; letter-spacing: .2em;
+                  text-transform: uppercase; margin-bottom: .45rem; }
+    .jd-page-description { color: #91aaba; font-size: .94rem; max-width: 760px; margin-bottom: .82rem; }
+    .jd-meta-row { display:flex; flex-wrap:wrap; gap:.45rem; margin-bottom:1.45rem; }
+    .jd-chip { padding:.28rem .58rem; border-radius:999px; background:rgba(105,149,174,.08);
+               border:1px solid rgba(105,149,174,.17); color:#91adbf; font-size:.67rem; letter-spacing:.03em; }
+    .jd-chip strong { color:#dff8ff; font-weight:650; }
+    .jd-divider { height:1px; margin:.2rem 0 1.15rem; background:linear-gradient(90deg,var(--jd-line),transparent 78%); }
+    [data-testid="stMetric"] {
+        position: relative; overflow: hidden; min-height: 108px;
+        background: linear-gradient(145deg, rgba(16,36,54,.91), rgba(9,23,36,.76));
+        border: 1px solid var(--jd-line); border-radius: 14px; padding: .92rem 1rem;
+        box-shadow: 0 12px 30px rgba(0,0,0,.11), inset 0 1px 0 rgba(255,255,255,.025);
+        transition: transform .16s ease, border-color .16s ease;
+    }
+    [data-testid="stMetric"]::before { content:""; position:absolute; inset:0 auto 0 0; width:2px;
+        background:linear-gradient(to bottom,var(--jd-cyan),transparent 80%); opacity:.72; }
+    [data-testid="stMetric"]:hover { transform: translateY(-2px); border-color: rgba(77,228,255,.32); }
+    [data-testid="stMetricLabel"] { color: #7895a9; }
+    [data-testid="stMetricLabel"] p { font-size: .68rem; font-weight: 720; text-transform: uppercase;
+                                      letter-spacing: .075em; }
+    [data-testid="stMetricValue"] { color: var(--jd-text); font-variant-numeric: tabular-nums; }
+    [data-testid="stMetricValue"] > div { font-size: 1.58rem; font-weight: 720; letter-spacing: -.035em; }
+    [data-testid="stPlotlyChart"] {
+        background: linear-gradient(145deg, rgba(12,29,44,.76), rgba(7,20,32,.52));
+        border: 1px solid var(--jd-line); border-radius: 16px; padding: .45rem;
+        box-shadow: 0 14px 38px rgba(0,0,0,.10); overflow: hidden;
+    }
+    [data-testid="stDataFrame"] { border: 1px solid var(--jd-line); border-radius: 13px; overflow: hidden; }
+    [data-testid="stAlert"] { border-radius: 12px; border: 1px solid var(--jd-line); }
+    .stButton > button, .stDownloadButton > button {
+        border-radius: 10px; border: 1px solid rgba(77,228,255,.28); min-height: 2.65rem;
+        background: linear-gradient(135deg, rgba(77,228,255,.16), rgba(31,112,144,.10));
+        color: #eaffff; font-weight: 680; letter-spacing: .015em; transition: all .16s ease;
+    }
+    .stButton > button:hover, .stDownloadButton > button:hover {
+        border-color: rgba(77,228,255,.65); background: rgba(77,228,255,.18);
+        box-shadow: 0 0 24px rgba(77,228,255,.10); transform: translateY(-1px);
+    }
+    [data-testid="stSelectbox"] > div > div, [data-baseweb="input"] {
+        background-color: rgba(10,25,39,.8); border-color: var(--jd-line); border-radius: 10px;
+    }
+    [data-testid="stExpander"] { border: 1px solid var(--jd-line); border-radius: 12px;
+                                 background: rgba(9,23,36,.52); }
+    .stTabs [data-baseweb="tab-list"] { gap: .32rem; border-bottom: 1px solid var(--jd-line); }
+    .stTabs [data-baseweb="tab"] { background: transparent; border-radius: 8px 8px 0 0; color:#7894a7; }
+    .stTabs [aria-selected="true"] { color: var(--jd-cyan); background: rgba(77,228,255,.07); }
+    .jd-status { position:relative; overflow:hidden; border-radius: 16px; padding: 1.15rem 1.3rem;
+                 margin: .2rem 0 1.15rem; background: linear-gradient(120deg,rgba(14,33,49,.94),rgba(8,22,34,.8));
+                 border: 1px solid var(--jd-line); box-shadow: 0 16px 38px rgba(0,0,0,.13); }
+    .jd-status::after { content:""; position:absolute; width:190px; height:190px; right:-65px; top:-95px;
+                        border-radius:50%; background:currentColor; opacity:.055; }
+    .jd-ready { color: var(--jd-green); border-left: 4px solid var(--jd-green); }
+    .jd-warning { color: var(--jd-amber); border-left: 4px solid var(--jd-amber); }
+    .jd-stop { color: var(--jd-red); border-left: 4px solid var(--jd-red); background:linear-gradient(120deg,rgba(54,18,30,.78),rgba(22,15,26,.78)); }
+    .jd-status-label { font-size: .62rem; font-weight:800; letter-spacing: .2em; color: currentColor; }
+    .jd-status-value { color: var(--jd-text); font-size: 1.45rem; font-weight: 760; margin: .2rem 0 .18rem; }
+    .jd-note { color: #8fa7b7; font-size: .78rem; }
+    .jd-device-card { display:grid; grid-template-columns:auto 1fr auto; align-items:center; gap:1rem;
+        padding:1.05rem 1.2rem; margin:.3rem 0 1.1rem; border-radius:15px; border:1px solid var(--jd-line);
+        background:linear-gradient(120deg,rgba(15,37,54,.9),rgba(8,23,35,.78)); }
+    .jd-device-icon { width:42px;height:42px;display:grid;place-items:center;border-radius:12px;
+        background:var(--jd-cyan-soft);border:1px solid rgba(77,228,255,.24);color:var(--jd-cyan);font-size:1.2rem; }
+    .jd-device-name { color:var(--jd-text);font-weight:720;font-size:1rem; }
+    .jd-device-meta { color:#7895a8;font-size:.72rem;margin-top:.18rem; }
+    .jd-online { color:var(--jd-green);font-size:.66rem;font-weight:800;letter-spacing:.13em; }
+    @media (max-width: 900px) { .block-container { padding: 1.4rem 1rem 4rem; } h1 { font-size:1.85rem!important; } }
 </style>
 """,
     unsafe_allow_html=True,
@@ -213,7 +394,6 @@ def _import_panel() -> None:
 
 
 def _sync_page() -> None:
-    st.header("Devices / Sync")
     st.markdown(
         "Bring the logger home, connect USB-C, and explicitly enable **SYNC** mode. "
         "microSD remains the source of truth; imports are copied, hash-verified, and never deleted remotely."
@@ -249,11 +429,17 @@ def _sync_page() -> None:
     pending = [manifest for manifest in manifests if manifest.session_id not in known]
     pending_bytes = sum(item.size for manifest in pending for item in manifest.files)
     status_color = "ONLINE" if device.mode.upper() == "SYNC" else device.mode.upper()
-    st.subheader(f"{device.name} — {status_color}")
+    st.markdown(
+        f'<div class="jd-device-card"><div class="jd-device-icon">⇄</div>'
+        f'<div><div class="jd-device-name">{escape(device.name)}</div>'
+        f'<div class="jd-device-meta">{escape(device.device_id)} · {escape(device.hardware_revision)}</div></div>'
+        f'<div class="jd-online"><span class="jd-live-dot"></span>{escape(status_color)}</div></div>',
+        unsafe_allow_html=True,
+    )
     columns = st.columns(6)
     columns[0].metric("Mode", device.mode)
     columns[1].metric("Battery", f"{device.battery_percent:.0f}%")
-    columns[2].metric("Firmware", device.firmware_version)
+    columns[2].metric("Firmware", device.firmware_version.removesuffix("-simulated"))
     columns[3].metric("SD free", f"{device.sd_free_percent:.0f}%")
     columns[4].metric("New sessions", len(pending))
     columns[5].metric("Pending data", f"{pending_bytes / (1024 * 1024):.1f} MB")
@@ -351,7 +537,10 @@ def _timeline_chart(frame: pd.DataFrame) -> go.Figure:
         )
     )
     figure.update_layout(
-        height=105, margin={"l": 0, "r": 0, "t": 10, "b": 20}, xaxis_title="Session seconds"
+        height=122,
+        margin={"l": 8, "r": 8, "t": 14, "b": 34},
+        xaxis_title="Session seconds",
+        yaxis={"showticklabels": False, "title": None},
     )
     return figure
 
@@ -418,6 +607,7 @@ def _flight_deck(
                 height=380,
                 title="Offline local track by ride state",
                 labels={"east_m": "East (m)", "north_m": "North (m)"},
+                render_mode="svg",
             )
             figure.update_traces(marker={"size": 4})
             figure.update_yaxes(scaleanchor="x", scaleratio=1)
@@ -439,7 +629,6 @@ def _flight_deck(
 
 
 def _launch_lab(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
-    st.header("Launch performance lab")
     attempts = build_launch_attempts(telemetry, events)
     if attempts.empty:
         st.warning("No launch attempts were detected in this session.")
@@ -474,6 +663,7 @@ def _launch_lab(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
                 "FAILED": "#f59e0b",
                 "LAUNCH_CRASH": "#ef4444",
             },
+            render_mode="svg",
         )
         figure.update_traces(opacity=0.78)
         st.plotly_chart(figure, width="stretch")
@@ -581,7 +771,6 @@ def _launch_lab(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
 def _ride_dynamics_page(
     telemetry: pd.DataFrame, events: pd.DataFrame, rides: pd.DataFrame, summary: dict[str, object]
 ) -> None:
-    st.header("Ride & crash dynamics")
     crashes = build_crash_dynamics(telemetry, events, CONFIG.detection.motor_power_w)
     if rides.empty:
         st.warning("No rides were detected in this session.")
@@ -626,6 +815,7 @@ def _ride_dynamics_page(
             color_continuous_scale="Turbo",
             title="Duration vs cruise load and vibration",
             labels={"mean_power_W": "Mean ride power (W)", "ride_seconds": "Ride seconds"},
+            render_mode="svg",
         )
         st.plotly_chart(figure, width="stretch")
 
@@ -645,6 +835,7 @@ def _ride_dynamics_page(
                 height=430,
                 title="Offline GPS trajectory colored by speed",
                 labels={"east_m": "East (m)", "north_m": "North (m)"},
+                render_mode="svg",
             )
             figure.update_traces(marker={"size": 5})
             lat0 = float(gps["gps_lat"].iloc[0])
@@ -749,7 +940,6 @@ def _ride_dynamics_page(
 
 
 def _thermal_lab(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
-    st.header("Thermal lab")
     trace, sensors, phases = build_thermal_analysis(telemetry)
     hottest = sensors.sort_values("peak_C", ascending=False).iloc[0]
     sensor_label = str(hottest["sensor"]).removesuffix("_C").replace("_", " ").upper()
@@ -861,7 +1051,6 @@ def _thermal_lab(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
 
 
 def _system_health_page(telemetry: pd.DataFrame, summary: dict[str, object]) -> None:
-    st.header("System monitoring & electrical envelope")
     monitor = system_monitoring_summary(telemetry)
     phases = build_electrical_phase_summary(telemetry)
     plot = telemetry.assign(session_seconds=_seconds(telemetry))
@@ -912,6 +1101,7 @@ def _system_health_page(telemetry: pd.DataFrame, summary: dict[str, object]) -> 
             color_discrete_map=STATE_COLORS,
             title="Voltage sag by operating phase",
             labels={"vesc_battery_A": "Battery current (A)", "vesc_vin_V": "Voltage (V)"},
+            render_mode="svg",
         )
         st.plotly_chart(figure, width="stretch")
     with right:
@@ -930,6 +1120,7 @@ def _system_health_page(telemetry: pd.DataFrame, summary: dict[str, object]) -> 
                 "battery_power_W": "Battery power (W)",
                 "pack_spread_C": "Pack spread (°C)",
             },
+            render_mode="svg",
         )
         st.plotly_chart(figure, width="stretch")
 
@@ -968,7 +1159,6 @@ def _system_health_page(telemetry: pd.DataFrame, summary: dict[str, object]) -> 
 
 
 def _tuning_page(session_id: str, summary: dict[str, object]) -> None:
-    st.header("VESC configuration & experiments")
     user_path = CONFIG_SNAPSHOT_ROOT / f"{summary['config_id']}.json"
     demo_path = DEMO_ROOT / "configs" / f"{summary['config_id']}.json"
     config_path = user_path if user_path.exists() else demo_path
@@ -1017,7 +1207,6 @@ def _tuning_page(session_id: str, summary: dict[str, object]) -> None:
 
 
 def _progress_page() -> None:
-    st.header("Progress across sessions")
     index_path = DEMO_ROOT / "session_index.csv"
     if not index_path.exists():
         st.info("At least two analyzed sessions are needed for progression views.")
@@ -1063,7 +1252,6 @@ def _progress_page() -> None:
 
 
 def _annotation_page(session_id: str, telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
-    st.header("Manual event annotation")
     st.markdown(
         "Correct takeoffs, touchdowns, recoveries, and falls here. Manual labels are preserved separately "
         "from detector output and become ground truth for later model development."
@@ -1106,7 +1294,6 @@ def _annotation_page(session_id: str, telemetry: pd.DataFrame, events: pd.DataFr
 
 
 def _raw_page(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
-    st.header("Raw telemetry")
     report = validate_telemetry(telemetry)
     if report.valid:
         st.success("Telemetry satisfies schema 1.0.0")
@@ -1135,17 +1322,28 @@ def _raw_page(telemetry: pd.DataFrame, events: pd.DataFrame) -> None:
 
 
 def main() -> None:
-    st.sidebar.markdown('<div class="jd-brand">JARRED DRIVE</div>', unsafe_allow_html=True)
     st.sidebar.markdown(
-        '<div class="jd-subtitle">FOIL-ASSIST FLIGHT RECORDER</div>', unsafe_allow_html=True
+        '<div class="jd-brand-wrap"><div class="jd-mark">J</div>'
+        '<div class="jd-brand">JARRED DRIVE</div></div>'
+        '<div class="jd-subtitle">FOIL INTELLIGENCE SYSTEM</div>',
+        unsafe_allow_html=True,
     )
     _import_panel()
     sessions = _available_sessions()
     if not sessions:
         st.error("No sessions found. Run `make demo` from the repository root.")
         st.stop()
-    session_id = st.sidebar.selectbox("Session", sorted(sessions, reverse=True))
-    page = st.sidebar.radio("Mode", NAV_ITEMS)
+    st.sidebar.markdown('<div class="jd-nav-label">ACTIVE SESSION</div>', unsafe_allow_html=True)
+    session_id = st.sidebar.selectbox(
+        "Session", sorted(sessions, reverse=True), label_visibility="collapsed"
+    )
+    st.sidebar.markdown('<div class="jd-nav-label">WORKSPACES</div>', unsafe_allow_html=True)
+    page = st.sidebar.radio(
+        "Mode",
+        NAV_ITEMS,
+        format_func=lambda item: f"{NAV_ICONS[item]}  {item}",
+        label_visibility="collapsed",
+    )
     telemetry_path = sessions[session_id]
     raw = _load_session(str(telemetry_path), telemetry_path.stat().st_mtime_ns)
     report = validate_telemetry(raw)
@@ -1161,12 +1359,33 @@ def main() -> None:
     rides = build_rides(telemetry, events)
     summary = summarize_session(telemetry, events, rides)
 
-    source_label = "SYNTHETIC" if use_truth else "IMPORTED"
-    st.sidebar.caption(f"{source_label} • schema {raw['schema_version'].iloc[0]}")
-    st.sidebar.caption("VESC policy: READ ONLY")
+    source_label = "SYNTHETIC DATA" if use_truth else "FIELD IMPORT"
+    st.sidebar.markdown(
+        f'<div class="jd-sidebar-foot"><div><span class="jd-live-dot"></span>{escape(source_label)}</div>'
+        f'<div style="margin-top:.42rem">Schema {escape(str(raw["schema_version"].iloc[0]))} · VESC read only</div></div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="jd-eyebrow">FOIL SESSION INTELLIGENCE</div>', unsafe_allow_html=True)
     st.title(page)
-    st.caption(
-        f"Session {session_id} • {summary['scenario']} • Configuration {summary['config_id']}"
+    st.markdown(
+        f'<div class="jd-page-description">{PAGE_DESCRIPTIONS[page]}</div>',
+        unsafe_allow_html=True,
+    )
+    if page == "Devices / Sync":
+        chips = (
+            '<span class="jd-chip"><strong>LOCAL</strong> home network</span>'
+            '<span class="jd-chip"><strong>SHA-256</strong> verified</span>'
+            '<span class="jd-chip"><strong>RAW</strong> never auto-deleted</span>'
+        )
+    else:
+        chips = (
+            f'<span class="jd-chip"><strong>SESSION</strong> {escape(session_id)}</span>'
+            f'<span class="jd-chip"><strong>SCENARIO</strong> {escape(str(summary["scenario"]))}</span>'
+            f'<span class="jd-chip"><strong>CONFIG</strong> {escape(str(summary["config_id"]))}</span>'
+        )
+    st.markdown(
+        f'<div class="jd-meta-row">{chips}</div><div class="jd-divider"></div>',
+        unsafe_allow_html=True,
     )
     if page == "Devices / Sync":
         _sync_page()

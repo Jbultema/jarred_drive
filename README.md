@@ -17,6 +17,8 @@ tracking, foiling analytics, GPS routes, and manual event annotation.
 - Raw → detected events → rides → session summaries, with confidence and provenance retained.
 - Streamlit Devices / Sync, Flight Deck, Launch Lab, Ride Dynamics, Thermal Lab, System Health, Tuning,
   Progress, Annotation, and Raw Data views.
+- A responsive cockpit-inspired visual system with compact navigation, session provenance chips, health-state
+  banners, consistent metric cards, and GPU-independent SVG analytical charts.
 - Home-LAN logger protocol with mDNS naming, REST manifests, resumable file downloads, SHA-256 verification,
   duplicate-safe imports, immutable raw storage, QA reports, and DuckDB/Parquet processed storage.
 - A filesystem-backed synthetic logger that exercises the complete synchronization workflow before hardware
