@@ -10,7 +10,7 @@ demo:
 	poetry run jarred-drive generate-demo --output data/demo
 
 dashboard:
-	poetry run streamlit run src/jarred_drive/dashboard/app.py
+	$(PYTHON) -m jarred_drive.dashboard.launcher
 
 test:
 	poetry run pytest

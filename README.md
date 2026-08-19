@@ -39,7 +39,12 @@ make check
 make dashboard
 ```
 
-Open the local URL printed by Streamlit. The newest demo session is selected by default.
+The launcher checks local ports beginning at `8501`, selects the first available one, and prints the exact
+URL to open. The newest demo session is selected by default. To begin the search elsewhere:
+
+```bash
+JARRED_DRIVE_PORT_START=8600 make dashboard
+```
 
 ## Common workflows
 

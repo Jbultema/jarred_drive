@@ -13,7 +13,9 @@ make dashboard
 ```
 
 Dashboard verification requires more than importing the Python module: start Streamlit, confirm an HTTP 200
-response, and inspect all six pages for the normal, thermal anomaly, and ingress drill sessions. See
+response, and inspect all seven pages for the normal, thermal anomaly, and ingress drill sessions. The
+launcher scans from port 8501 and binds to the first available IPv4 localhost port; set
+`JARRED_DRIVE_PORT_START` to begin elsewhere. See
 `docs/validation_report.md` for the most recent captured evidence.
 
 ## Privacy
