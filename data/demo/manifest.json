@@ -1,0 +1,24 @@
+{
+  "schema_version": "1.0.0",
+  "description": "Deterministic synthetic Jarred Drive sessions; not hardware observations.",
+  "sessions": [
+    {
+      "session_id": "2026-08-10-001",
+      "scenario": "Learning session",
+      "config_id": "FOIL_001",
+      "directory": "2026-08-10-001"
+    },
+    {
+      "session_id": "2026-08-14-001",
+      "scenario": "Pack 4 thermal anomaly",
+      "config_id": "FOIL_002",
+      "directory": "2026-08-14-001"
+    },
+    {
+      "session_id": "2026-08-18-001",
+      "scenario": "Ingress safety drill",
+      "config_id": "FOIL_003",
+      "directory": "2026-08-18-001"
+    }
+  ]
+}

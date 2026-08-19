@@ -1,0 +1,110 @@
+"""Command-line workflows for data generation, validation, and analysis."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from typing import Annotated
+
+import pandas as pd
+import typer
+
+from jarred_drive.analytics import build_rides, summarize_session
+from jarred_drive.config import DEFAULT_CONFIG_PATH, load_config
+from jarred_drive.events import detect_events
+from jarred_drive.io import read_telemetry
+from jarred_drive.schema import validate_telemetry
+from jarred_drive.synthetic import write_demo_package
+
+app = typer.Typer(no_args_is_help=True, help="Jarred Drive telemetry and analytics tools.")
+
+
+@app.command("generate-demo")
+def generate_demo(
+    output: Annotated[Path, typer.Option(help="Demo package directory")] = Path("data/demo"),
+    config_path: Annotated[
+        Path, typer.Option(help="System threshold configuration")
+    ] = DEFAULT_CONFIG_PATH,
+) -> None:
+    """Create deterministic synthetic sessions covering normal and fault scenarios."""
+    written = write_demo_package(output, load_config(config_path))
+    typer.echo(f"Generated {len(written)} artifacts under {output}")
+
+
+@app.command("validate-log")
+def validate_log(path: Annotated[Path, typer.Argument(help="Telemetry CSV")]) -> None:
+    """Validate a logger CSV against the versioned raw-data contract."""
+    report = validate_telemetry(read_telemetry(path))
+    for issue in report.issues:
+        typer.echo(f"{issue.severity.upper():7} {issue.code}: {issue.message} ({issue.row_count})")
+    if not report.valid:
+        raise typer.Exit(code=1)
+    typer.echo("VALID")
+
+
+@app.command("summarize")
+def summarize(
+    path: Annotated[Path, typer.Argument(help="Telemetry CSV")],
+    output: Annotated[Path | None, typer.Option(help="Optional JSON output")] = None,
+    synthetic_truth: Annotated[
+        bool, typer.Option(help="Use sim_state when present instead of baseline detection")
+    ] = False,
+) -> None:
+    """Derive events, rides, and a session summary from raw telemetry."""
+    frame = read_telemetry(path)
+    report = validate_telemetry(frame)
+    if not report.valid:
+        typer.echo("Log validation failed; run validate-log for details")
+        raise typer.Exit(code=1)
+    config = load_config()
+    telemetry, events = detect_events(frame, config.detection, use_synthetic_truth=synthetic_truth)
+    rides = build_rides(telemetry, events)
+    summary = summarize_session(telemetry, events, rides)
+    rendered = json.dumps(summary, indent=2, default=float)
+    if output:
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(rendered + "\n")
+        events.to_csv(output.with_name(output.stem + "_events.csv"), index=False)
+        rides.to_csv(output.with_name(output.stem + "_rides.csv"), index=False)
+    typer.echo(rendered)
+
+
+@app.command("compare-configs")
+def compare_configs(
+    session_index: Annotated[Path, typer.Option(help="Generated session index CSV")] = Path(
+        "data/demo/session_index.csv"
+    ),
+) -> None:
+    """Print an experiment table grouped by immutable VESC configuration snapshot."""
+    frame = pd.read_csv(session_index)
+    columns = [
+        "config_id",
+        "launch_success",
+        "foil_utilization",
+        "energy_Wh",
+        "peak_pack_C",
+        "longest_ride_seconds",
+    ]
+    typer.echo(frame[columns].to_string(index=False))
+
+
+@app.command("register-config")
+def register_config(
+    path: Annotated[Path, typer.Argument(help="VESC configuration snapshot JSON")],
+    output: Annotated[Path, typer.Option(help="Local snapshot registry")] = Path("data/configs"),
+) -> None:
+    """Register a read-only VESC snapshot for lookup by session config_id."""
+    snapshot = json.loads(path.read_text(encoding="utf-8"))
+    config_id = snapshot.get("config_id")
+    if not isinstance(config_id, str) or not config_id.strip():
+        typer.echo("Snapshot must contain a non-empty string config_id")
+        raise typer.Exit(code=1)
+    snapshot["write_policy"] = "read_only_snapshot"
+    output.mkdir(parents=True, exist_ok=True)
+    destination = output / f"{config_id}.json"
+    destination.write_text(json.dumps(snapshot, indent=2) + "\n", encoding="utf-8")
+    typer.echo(f"Registered {config_id} at {destination}")
+
+
+if __name__ == "__main__":
+    app()

@@ -1,0 +1,17 @@
+{
+  "config_id": "FOIL_XXX",
+  "name": "Describe this profile",
+  "captured_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "vesc_hardware": "Flipsky 75200 Pro V2.0",
+  "vesc_firmware": "record from VESC Tool",
+  "motor_current_max_A": null,
+  "battery_current_max_A": null,
+  "duty_max": null,
+  "throttle_ramp_seconds": null,
+  "control_mode": "Current No Reverse",
+  "motor_temp_limit_C": null,
+  "vesc_temp_limit_C": null,
+  "source": "manual VESC Tool snapshot",
+  "write_policy": "read_only_snapshot",
+  "notes": ""
+}

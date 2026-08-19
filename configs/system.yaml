@@ -1,0 +1,17 @@
+detection:
+  motor_power_w: 180.0
+  attempt_min_seconds: 1.5
+  foil_speed_mps: 4.6
+  foil_erpm: 32000.0
+  foil_vibration_g: 0.22
+  touchdown_vibration_g: 0.52
+  fall_gyro_dps: 145.0
+  recovery_window_seconds: 5.0
+
+safety:
+  pack_warning_c: 45.0
+  pack_critical_c: 50.0
+  pack_delta_warning_c: 7.0
+  mosfet_warning_c: 75.0
+  enclosure_warning_c: 50.0
+  minimum_voltage_v: 36.0
