@@ -67,6 +67,8 @@ class SessionManifest:
     vesc_config_id: str
     vesc_config_hash: str
     files: tuple[ManifestFile, ...]
+    data_kind: str = "unknown"
+    scenario: str | None = None
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> SessionManifest:
@@ -94,6 +96,8 @@ class SessionManifest:
             vesc_config_id=str(payload.get("vesc_config_id", "")),
             vesc_config_hash=str(payload.get("vesc_config_hash", "")),
             files=files,
+            data_kind=str(payload.get("data_kind", "unknown")),
+            scenario=str(payload["scenario"]) if payload.get("scenario") is not None else None,
         )
         if manifest.schema_version != MANIFEST_SCHEMA_VERSION:
             raise SyncError(f"Unsupported manifest schema {manifest.schema_version!r}")
@@ -121,6 +125,8 @@ class SessionManifest:
             "vesc_config_id": self.vesc_config_id,
             "vesc_config_hash": self.vesc_config_hash,
             "files": [item.__dict__ for item in self.files],
+            "data_kind": self.data_kind,
+            "scenario": self.scenario,
         }
 
 
@@ -133,6 +139,8 @@ class DeviceInfo:
     mode: str
     battery_percent: float
     sd_free_percent: float
+    data_kind: str = "unknown"
+    capabilities: dict[str, bool] | None = None
 
 
 @dataclass(frozen=True)
@@ -242,6 +250,12 @@ class HttpLoggerClient:
             mode=str(status.get("mode", "UNKNOWN")),
             battery_percent=float(raw_battery),
             sd_free_percent=float(raw_sd_free),
+            data_kind=str(payload.get("data_kind", "unknown")),
+            capabilities=(
+                {str(key): bool(value) for key, value in raw_capabilities.items()}
+                if isinstance((raw_capabilities := payload.get("capabilities")), dict)
+                else None
+            ),
         )
 
     def session_ids(self) -> list[str]:

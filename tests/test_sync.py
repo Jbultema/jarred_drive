@@ -37,7 +37,7 @@ def test_sync_verifies_preserves_processes_and_deduplicates(tmp_path: Path) -> N
     store = SessionStore(raw, processed)
 
     first = sync_logger(client, store)
-    assert len(first) == 3
+    assert len(first) == 4
     assert {result.status for result in first} == {"imported"}
     assert all(result.validation and result.validation.valid for result in first)
 
@@ -47,7 +47,7 @@ def test_sync_verifies_preserves_processes_and_deduplicates(tmp_path: Path) -> N
     assert (raw / "jarred-drive-sim-01" / session_id / "telemetry.csv").exists()
     assert (processed / "sessions" / session_id / "telemetry.parquet").exists()
     with duckdb.connect(str(processed / "jarred_drive.duckdb"), read_only=True) as connection:
-        assert connection.execute("SELECT count(*) FROM sessions").fetchone() == (3,)
+        assert connection.execute("SELECT count(*) FROM sessions").fetchone() == (4,)
 
 
 def test_corrupt_download_is_not_imported_or_acknowledged(tmp_path: Path) -> None:

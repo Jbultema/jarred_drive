@@ -42,7 +42,8 @@ water probe -->  |  +---- local high-contrast status display
                     immutable local raw copy
                               |
                               v
-                 DuckDB/Parquet -> Streamlit analytics
+                 +-> DuckDB/Parquet -> Streamlit analytics
+                 +-> iPhone raw copy -> glance summary / analysis handoff
 ```
 
 The propulsion path remains complete if the ESP32 is absent, rebooting, or failed. The firmware polls VESC
@@ -60,6 +61,7 @@ telemetry but exposes no command or configuration-write API.
 - `src/jarred_drive/annotations.py`: human ground-truth labels with provenance.
 - `src/jarred_drive/dashboard/`: local Streamlit analytical application.
 - `data/demo/`: deterministic synthetic fixture package.
+- `ios/`: native SwiftUI direct-sync and offline review prototype.
 
 Raw telemetry is immutable input. Events, rides, and summaries are derivative products and should be
 regenerated whenever detection logic changes.

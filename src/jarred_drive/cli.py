@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import socket
 from pathlib import Path
 from typing import Annotated
 
@@ -19,6 +20,7 @@ from jarred_drive.analytics import (
     system_monitoring_summary,
 )
 from jarred_drive.config import DEFAULT_CONFIG_PATH, load_config
+from jarred_drive.demo_server import create_demo_server
 from jarred_drive.events import detect_events
 from jarred_drive.io import read_telemetry
 from jarred_drive.schema import validate_telemetry
@@ -165,6 +167,37 @@ def sync_device(
             f"({result.verified_files} files, {result.downloaded_bytes} bytes downloaded)"
         )
     typer.echo("Raw logger data was not deleted.")
+
+
+@app.command("serve-demo")
+def serve_demo(
+    source: Annotated[Path, typer.Option(help="Synthetic logger package")] = Path("data/demo"),
+    host: Annotated[
+        str, typer.Option(help="Listen address; use 0.0.0.0 for a physical phone")
+    ] = "127.0.0.1",
+    port: Annotated[int, typer.Option(help="HTTP port")] = 8765,
+    token: Annotated[str | None, typer.Option(help="Optional acknowledgement token")] = None,
+) -> None:
+    """Serve synthetic fixtures using the same REST contract as the ESP logger."""
+    try:
+        server = create_demo_server(source, host=host, port=port, token=token)
+    except OSError as error:
+        typer.echo(f"DEMO SERVER FAILED: {error}")
+        raise typer.Exit(code=1) from error
+    shown_host = host
+    if host == "0.0.0.0":
+        try:
+            shown_host = socket.gethostbyname(socket.gethostname())
+        except OSError:
+            shown_host = "YOUR_MAC_IP"
+    typer.echo(f"Synthetic development logger: http://{shown_host}:{server.server_port}")
+    typer.echo("Synthetic fixtures are software test data, not hardware observations.")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        typer.echo("\nDemo server stopped")
+    finally:
+        server.server_close()
 
 
 if __name__ == "__main__":

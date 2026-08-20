@@ -19,6 +19,12 @@
       "scenario": "Ingress safety drill",
       "config_id": "FOIL_003",
       "directory": "2026-08-18-001"
+    },
+    {
+      "session_id": "2026-08-11-001",
+      "scenario": "Commissioning repeat",
+      "config_id": "FOIL_004",
+      "directory": "2026-08-11-001"
     }
   ]
 }

@@ -14,6 +14,19 @@
 
 The `poetry run jarred-drive sync --url demo` command exercises exactly this pipeline against synthetic files.
 
+## iPhone and desktop coexistence
+
+The ESP microSD remains the shared source of truth. The iPhone and Streamlit computer each independently pull
+the same finalized manifest and raw files, verify the same SHA-256 hashes, and retain their own local copy.
+They therefore agree by content identity without requiring the computer to relay data to the phone or a cloud
+database. During development, `jarred-drive serve-demo` makes the computer impersonate that read-only ESP API,
+so synthetic sessions exercise the actual iPhone transport.
+
+The first native prototype does not upload phone-only data back to the computer. That is not needed for ESP
+sessions because acknowledgement never deletes the authoritative microSD copy. A later peer-reconciliation
+feature can exchange manifests if field experience reveals a real gap; it should not create a second mutable
+raw-data authority.
+
 ## REST contract
 
 - `GET /api/device`
@@ -25,6 +38,9 @@ The `poetry run jarred-drive sync --url demo` command exercises exactly this pip
 
 Read endpoints exist only while the logger is in SYNC mode. Write-side acknowledgement is authenticated. There
 is deliberately no VESC control/configuration endpoint, no cloud dependency, and no automatic raw-data delete.
+
+The native app currently uses the read endpoints only. Its configuration view is an immutable snapshot; VESC
+changes remain a separate, deliberate VESC Tool operation performed ashore.
 
 ## Local storage
 

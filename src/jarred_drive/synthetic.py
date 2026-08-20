@@ -51,6 +51,14 @@ SCENARIOS = (
     ),
     Scenario("2026-08-14-001", "FOIL_002", "Pack 4 thermal anomaly", 208, 8, True),
     Scenario("2026-08-18-001", "FOIL_003", "Ingress safety drill", 312, 6, False, True, True),
+    Scenario(
+        "2026-08-11-001",
+        "FOIL_004",
+        "Commissioning repeat",
+        105,
+        8,
+        aborted_launch_indices=(6,),
+    ),
 )
 
 CONFIG_SNAPSHOTS = {
@@ -80,6 +88,16 @@ CONFIG_SNAPSHOTS = {
         "throttle_ramp_seconds": 1.0,
         "control_mode": "Current No Reverse",
         "write_policy": "read_only_snapshot",
+    },
+    "FOIL_004": {
+        "name": "Commissioning repeat",
+        "motor_current_max_A": 72,
+        "battery_current_max_A": 48,
+        "duty_max": 0.90,
+        "throttle_ramp_seconds": 0.8,
+        "control_mode": "Current No Reverse",
+        "write_policy": "read_only_snapshot",
+        "synthetic_comparison_note": "Single-parameter fixture relative to FOIL_001",
     },
 }
 
@@ -386,6 +404,14 @@ def write_demo_package(output: Path, config: AppConfig) -> list[Path]:
                 "mode": "SYNC",
                 "battery_percent": 83.0,
                 "sd_free_percent": 71.0,
+                "data_kind": "synthetic",
+                "capabilities": {
+                    "session_download": True,
+                    "range_download": True,
+                    "live_status": False,
+                    "config_write": False,
+                    "peer_upload": False,
+                },
             },
             indent=2,
         )
@@ -450,6 +476,8 @@ def write_demo_package(output: Path, config: AppConfig) -> list[Path]:
             "hardware_revision": "logger-v1-simulated",
             "vesc_config_id": scenario.config_id,
             "vesc_config_hash": sha256_file(config_path),
+            "data_kind": "synthetic",
+            "scenario": scenario.name,
             "files": [
                 {
                     "name": path.name,

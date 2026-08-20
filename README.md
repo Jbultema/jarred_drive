@@ -61,14 +61,17 @@ services.
   QMI8658 motion, health flags, and optional GNSS.
 - Deterministic coupled simulation with realistic route geometry, turns, launch-to-foil transitions, aborted
   starts, crashes, recoveries, voltage sag, heating, GNSS dropout, and logger degradation.
-- Three development scenarios: learning session, Pack 4 thermal anomaly, and latched water-ingress/VESC-fault
-  drill.
+- Four development scenarios: a single-parameter commissioning pair, Pack 4 thermal anomaly, and latched
+  water-ingress/VESC-fault drill.
 - Derived launch attempts and aligned power curves, rides, crash windows, electrical/thermal phase summaries,
   turn dynamics, session summaries, and progression metrics.
 - Home-LAN logger manifests, resumable downloads, SHA-256 verification, duplicate-safe import, immutable raw
   storage, QA reports, and DuckDB/Parquet processing.
 - Manual annotations stored separately from raw observations and merged with provenance.
 - PlatformIO firmware for Waveshare ESP32-S3-LCD-1.47B plus host-native safety-policy tests.
+- A native SwiftUI iPhone prototype that pulls the same immutable sessions from either the ESP or a Mac-hosted
+  synthetic logger, verifies hashes, presents a compact ride/health summary, and exports a read-only analysis
+  handoff for ChatGPT mobile.
 
 Synthetic results prove software workflows, not real hardware behavior, classifier accuracy, safe thermal
 limits, or on-water performance. Definitions and inference limits live in [analytics.md](docs/analytics.md).
@@ -124,6 +127,12 @@ poetry run jarred-drive register-config path/to/FOIL_012.json
 
 # Exercise verified sync against the synthetic logger
 poetry run jarred-drive sync --url demo
+
+# Emulate the ESP API for the iOS Simulator
+make demo-server
+
+# Emulate it for an iPhone on the same trusted Wi-Fi (use the Mac's LAN IP in the app)
+poetry run jarred-drive serve-demo --source data/demo --host 0.0.0.0 --port 8765
 
 # Sync physical logger after explicitly enabling SYNC mode
 poetry run jarred-drive sync --url http://jarred-drive.local --token YOUR_LOCAL_DEVICE_TOKEN

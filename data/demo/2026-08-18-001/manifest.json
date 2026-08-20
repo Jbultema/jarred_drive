@@ -10,6 +10,8 @@
   "hardware_revision": "logger-v1-simulated",
   "vesc_config_id": "FOIL_003",
   "vesc_config_hash": "684e7d58a271fc636e1b1dc02f1df19a730ab54587348507a2b60183d4d01103",
+  "data_kind": "synthetic",
+  "scenario": "Ingress safety drill",
   "files": [
     {
       "name": "telemetry.csv",

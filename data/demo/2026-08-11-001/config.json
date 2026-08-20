@@ -1,0 +1,11 @@
+{
+  "config_id": "FOIL_004",
+  "name": "Commissioning repeat",
+  "motor_current_max_A": 72,
+  "battery_current_max_A": 48,
+  "duty_max": 0.9,
+  "throttle_ramp_seconds": 0.8,
+  "control_mode": "Current No Reverse",
+  "write_policy": "read_only_snapshot",
+  "synthetic_comparison_note": "Single-parameter fixture relative to FOIL_001"
+}

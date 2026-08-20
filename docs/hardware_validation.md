@@ -3,7 +3,7 @@
 These are evidence gates, not a substitute for the supplied build guide. Record results, photos, firmware hash,
 VESC firmware, configuration snapshot, and measured values for each gate.
 
-1. **Host simulation:** `make check` passes; three synthetic scenarios render and alert correctly.
+1. **Host simulation:** `make check` passes; four synthetic scenarios render and alert correctly.
 2. **Firmware compile:** `make firmware-hardware` succeeds for the exact checked-out sources.
 3. **USB-only display:** verify orientation, legibility, reboot behavior, and READY/WARNING/STOP pages.
 4. **USB-only monitoring board:** confirm every 74HC4051 channel, NTC conversion near room temperature,

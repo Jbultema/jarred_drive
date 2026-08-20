@@ -1,7 +1,7 @@
 PYTHON := poetry run python
 PLATFORMIO_ENV := PLATFORMIO_CORE_DIR=$(CURDIR)/.platformio PLATFORMIO_SETTING_ENABLE_TELEMETRY=no
 
-.PHONY: install demo dashboard test lint format typecheck check firmware-native firmware-hardware
+.PHONY: install demo demo-server dashboard ios-build test lint format typecheck check firmware-native firmware-hardware
 
 install:
 	poetry install --sync
@@ -9,8 +9,16 @@ install:
 demo:
 	poetry run jarred-drive generate-demo --output data/demo
 
+demo-server: demo
+	poetry run jarred-drive serve-demo --source data/demo
+
 dashboard:
 	$(PYTHON) -m jarred_drive.dashboard.launcher
+
+ios-build:
+	xcodebuild -project ios/JarredDrive.xcodeproj -scheme 'Jarred Drive' -configuration Debug \
+		-destination 'generic/platform=iOS Simulator' -derivedDataPath .build/xcode \
+		CODE_SIGNING_ALLOWED=NO build
 
 test:
 	poetry run pytest

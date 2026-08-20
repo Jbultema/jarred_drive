@@ -10,6 +10,8 @@
   "hardware_revision": "logger-v1-simulated",
   "vesc_config_id": "FOIL_001",
   "vesc_config_hash": "74f43817cbde1858a1c6f2e3bb9f0c5105bd6c72febc2fd74c31cc5dc5280778",
+  "data_kind": "synthetic",
+  "scenario": "Learning session",
   "files": [
     {
       "name": "telemetry.csv",

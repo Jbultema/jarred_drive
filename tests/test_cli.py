@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 from typer.testing import CliRunner
 
@@ -38,3 +39,21 @@ def test_summarize_exports_full_analysis_package(tmp_path: Path) -> None:
     ):
         expected = output_path if suffix == ".json" else tmp_path / f"analysis{suffix}"
         assert expected.exists(), expected
+
+
+def test_serve_demo_reports_synthetic_source(tmp_path: Path) -> None:
+    demo = tmp_path / "demo"
+    from jarred_drive.config import load_config
+    from jarred_drive.synthetic import write_demo_package
+
+    write_demo_package(demo, load_config())
+    server = MagicMock()
+    server.server_port = 8765
+    server.serve_forever.side_effect = KeyboardInterrupt
+    with patch("jarred_drive.cli.create_demo_server", return_value=server):
+        result = CliRunner().invoke(app, ["serve-demo", "--source", str(demo)])
+
+    assert result.exit_code == 0, result.output
+    assert "Synthetic development logger" in result.output
+    assert "not hardware observations" in result.output
+    server.server_close.assert_called_once()

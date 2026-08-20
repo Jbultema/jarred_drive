@@ -36,3 +36,25 @@ email:  Jbultema@users.noreply.github.com
 ```
 
 Do not inherit a work identity and do not add work-library dependencies.
+
+## Native iPhone prototype
+
+The app in `ios/JarredDrive.xcodeproj` requires the full Xcode application, not only Apple's Command Line
+Tools. It targets iOS 17 and has no third-party packages, cloud account, analytics SDK, or VESC write path.
+
+1. Install and launch Xcode once, then select it with
+   `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` if needed.
+2. Run `make demo-server`, open the project, and run **Jarred Drive** in an iPhone Simulator. The default
+   `http://127.0.0.1:8765` address reaches the Mac-hosted synthetic logger.
+3. For a physical phone, run
+   `poetry run jarred-drive serve-demo --source data/demo --host 0.0.0.0 --port 8765`, put the phone and Mac on
+   the same trusted Wi-Fi, and enter `http://<mac-lan-ip>:8765` in the app. Allow the local-network and Mac
+   firewall prompts. Select a personal Apple development team in Xcode before installing on the phone.
+
+The orange synthetic label is intentional: these sessions are software fixtures. The app preserves a verified
+raw copy under its Application Support directory. The simulator uses the Mac process only as a stand-in for
+hardware; the real ESP will implement the identical REST contract.
+
+`make ios-build` provides a signing-free compiler check. Running the app still requires at least one iOS
+Simulator runtime under Xcode **Settings → Components**, or a connected iPhone with a selected development
+team.

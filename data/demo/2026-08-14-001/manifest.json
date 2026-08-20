@@ -10,6 +10,8 @@
   "hardware_revision": "logger-v1-simulated",
   "vesc_config_id": "FOIL_002",
   "vesc_config_hash": "3204b123c505b40bc0d925f8eed906dbfc53bfe4641ac689a93d15bc191e1afb",
+  "data_kind": "synthetic",
+  "scenario": "Pack 4 thermal anomaly",
   "files": [
     {
       "name": "telemetry.csv",

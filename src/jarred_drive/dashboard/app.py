@@ -1273,7 +1273,7 @@ def _progress_page() -> None:
     )
     st.plotly_chart(figure, width="stretch")
     st.info(
-        "These three points are synthetic workflow fixtures, not a performance trend. Field progression "
+        "These points are synthetic workflow fixtures, not a performance trend. Field progression "
         "becomes meaningful only after repeated, manually reviewed sessions under comparable conditions."
     )
 

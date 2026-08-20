@@ -15,10 +15,13 @@ def test_generation_is_deterministic() -> None:
     pd.testing.assert_frame_equal(first, second)
 
 
-def test_demo_package_contains_three_scenarios(tmp_path: Path) -> None:
+def test_demo_package_contains_commissioning_scenarios(tmp_path: Path) -> None:
     write_demo_package(tmp_path, load_config())
     manifest = json.loads((tmp_path / "manifest.json").read_text())
-    assert len(manifest["sessions"]) == 3
+    assert len(manifest["sessions"]) == 4
+    device = json.loads((tmp_path / "device.json").read_text())
+    assert device["data_kind"] == "synthetic"
+    assert device["capabilities"]["config_write"] is False
     for scenario in SCENARIOS:
         assert (tmp_path / scenario.session_id / "telemetry.csv").exists()
         assert (tmp_path / scenario.session_id / "events.csv").exists()
@@ -30,6 +33,21 @@ def test_demo_package_contains_three_scenarios(tmp_path: Path) -> None:
         assert (tmp_path / scenario.session_id / "electrical_phases.csv").exists()
         assert (tmp_path / scenario.session_id / "monitoring.json").exists()
         assert (tmp_path / scenario.session_id / "summary.json").exists()
+        session_manifest = json.loads(
+            (tmp_path / scenario.session_id / "manifest.json").read_text()
+        )
+        assert session_manifest["data_kind"] == "synthetic"
+        assert session_manifest["scenario"] == scenario.name
+
+    baseline = json.loads((tmp_path / "configs" / "FOIL_001.json").read_text())
+    repeat = json.loads((tmp_path / "configs" / "FOIL_004.json").read_text())
+    changed = {
+        key
+        for key in baseline.keys() | repeat.keys()
+        if key not in {"config_id", "name", "synthetic_comparison_note"}
+        and baseline.get(key) != repeat.get(key)
+    }
+    assert changed == {"throttle_ramp_seconds"}
 
 
 def test_synthetic_motion_couples_turns_gps_and_imu() -> None:
